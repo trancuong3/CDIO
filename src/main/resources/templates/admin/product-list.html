@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý kho gà khô</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #fafafa;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background: #222;
+            color: white;
+        }
+
+        .expired {
+            background: #ffcccc;
+        }
+
+        .warning {
+            background: #fff3cd;
+        }
+
+        .ok {
+            background: #ccffcc;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        .badge-danger { background: red; color: white }
+        .badge-warning { background: orange; color: white }
+        .badge-success { background: green; color: white }
+    </style>
+</head>
+
+<body>
+
+<h2>📦 QUẢN LÝ KHO GÀ KHÔ</h2>
+
+<a th:href="@{/admin/products/create}">➕ Thêm sản phẩm</a>
+
+<br><br>
+
+<table>
+
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Tên</th>
+        <th>Gram</th>
+        <th>Giá sỉ</th>
+        <th>Tồn</th>
+        <th>Ngày nhập</th>
+        <th>Hạn (ngày)</th>
+        <th>Ngày hết hạn</th>
+        <th>Còn lại</th>
+        <th>Trạng thái</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+
+    <tbody>
+
+    <tr th:each="i : ${inventories}"
+        th:classappend="
+        ${i.daysLeft < 0} ? 'expired' :
+        (${i.daysLeft <= 7} ? 'warning' : 'ok')">
+
+        <td th:text="${i.productId}"></td>
+        <td th:text="${i.productName}"></td>
+        <td th:text="${i.weightGrams}"></td>
+        <td th:text="${i.wholesalePrice}"></td>
+        <td th:text="${i.quantity}"></td>
+
+        <td th:text="${#temporals.format(i.createdAt,'dd/MM/yyyy')}"></td>
+
+        <td th:text="${i.expiryDays}"></td>
+
+        <td th:text="${#temporals.format(i.expiredAt,'dd/MM/yyyy')}"></td>
+
+        <td th:text="${i.daysLeft + ' ngày'}"></td>
+
+        <td>
+
+            <span th:if="${i.daysLeft < 0}" class="badge badge-danger">
+                HẾT HẠN
+            </span>
+
+            <span th:if="${i.daysLeft >= 0 and i.daysLeft <= 7}" class="badge badge-warning">
+                SẮP HẾT
+            </span>
+
+            <span th:if="${i.daysLeft > 7}" class="badge badge-success">
+                OK
+            </span>
+
+        </td>
+
+        <td>
+            <a th:href="@{/admin/products/edit/{id}(id=${i.productId})}">✏</a>
+            &nbsp;
+            <a th:href="@{/admin/products/delete/{id}(id=${i.productId})}"
+               onclick="return confirm('Xóa sản phẩm?')">🗑</a>
+        </td>
+
+    </tr>
+
+    </tbody>
+
+</table>
+
+<br>
+
+<a th:href="@{/admin}">⬅ Dashboard</a>
+
+</body>
+</html>

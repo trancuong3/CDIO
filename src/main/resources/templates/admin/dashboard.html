@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body{
+      background:#f5f6fa;
+    }
+
+    .card{
+      max-width:700px;
+      margin:60px auto;
+      padding:40px;
+      border-radius:10px;
+    }
+  </style>
+
+</head>
+
+<body>
+
+<div class="card shadow">
+
+  <h2 class="mb-4">🛠 ADMIN – QUẢN LÝ KHO KHÔ GÀ</h2>
+
+  <div class="list-group">
+
+    <a th:href="@{/admin/products}" class="list-group-item list-group-item-action">
+      📦 Quản lý sản phẩm
+    </a>
+
+    <a th:href="@{/admin/inventory}" class="list-group-item list-group-item-action">
+      📊 Quản lý tồn kho
+    </a>
+
+    <a th:href="@{/admin/orders}" class="list-group-item list-group-item-action">
+      🧾 Duyệt đơn hàng
+    </a>
+
+    <a th:href="@{/admin/users}" class="list-group-item list-group-item-action">
+      👤 Quản lý User
+    </a>
+
+  </div>
+
+  <hr>
+
+  <a th:href="@{/logout}" class="btn btn-danger">Logout</a>
+
+</div>
+
+</body>
+</html>

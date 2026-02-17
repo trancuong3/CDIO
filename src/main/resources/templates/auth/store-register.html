@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng ký Store</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f2f2f2;
+        }
+
+        .container {
+            width: 400px;
+            margin: 50px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,.1);
+        }
+
+        h2,h3 {
+            text-align: center;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 6px 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #ff6600;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .error {
+            color: red;
+            text-align: center;
+        }
+
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>ĐĂNG KÝ STORE KHÔ GÀ</h2>
+
+    <div class="error" th:if="${error}" th:text="${error}"></div>
+
+    <form th:action="@{/store/register}" th:object="${form}" method="post">
+
+        <h3>Thông tin cửa hàng</h3>
+
+        <input placeholder="Tên cửa hàng" th:field="*{storeName}">
+        <span class="error" th:errors="*{storeName}"></span>
+
+        <input placeholder="Địa chỉ" th:field="*{address}">
+
+        <input placeholder="Người đại diện" th:field="*{representativeName}">
+        <span class="error" th:errors="*{representativeName}"></span>
+
+        <input placeholder="Số điện thoại" th:field="*{phone}">
+        <span class="error" th:errors="*{phone}"></span>
+
+        <h3>Tài khoản</h3>
+
+        <input placeholder="Username" th:field="*{username}">
+        <span class="error" th:errors="*{username}"></span>
+
+        <input type="password" placeholder="Mật khẩu" th:field="*{password}">
+        <span class="error" th:errors="*{password}"></span>
+
+        <input placeholder="Họ tên" th:field="*{fullName}">
+        <span class="error" th:errors="*{fullName}"></span>
+
+        <button type="submit">Đăng ký</button>
+
+    </form>
+
+    <a th:href="@{/login}">← Quay lại đăng nhập</a>
+
+</div>
+
+</body>
+</html>

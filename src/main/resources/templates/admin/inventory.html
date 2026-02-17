@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Inventory</title>
+
+    <style>
+        body{
+            font-family: Arial;
+            padding:20px;
+            background:#f4f6f9;
+        }
+
+        h2{
+            margin-bottom:10px;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+            background:white;
+        }
+
+        th,td{
+            border:1px solid #ddd;
+            padding:8px;
+            text-align:center;
+        }
+
+        th{
+            background:#222;
+            color:white;
+        }
+
+        tr:nth-child(even){
+            background:#f2f2f2;
+        }
+
+        .danger{
+            background:#ffcccc !important;
+        }
+
+        .warn{
+            background:#fff3cd !important;
+        }
+
+        form{
+            margin-bottom:15px;
+        }
+
+        input,select,button{
+            padding:6px;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<h2>📦 QUẢN LÝ TỒN KHO</h2>
+
+<!-- ===== NHẬP ===== -->
+<form th:action="@{/admin/inventory/in}" method="post">
+
+    <select name="productId">
+        <option th:each="p : ${products}"
+                th:value="${p.id}"
+                th:text="${p.name}">
+        </option>
+    </select>
+
+    <input type="number" name="qty" placeholder="Số lượng" required>
+
+    <button type="submit">➕ Nhập kho</button>
+</form>
+
+<!-- ===== XUẤT ===== -->
+<form th:action="@{/admin/inventory/out}" method="post">
+
+    <select name="productId">
+        <option th:each="p : ${products}"
+                th:value="${p.id}"
+                th:text="${p.name}">
+        </option>
+    </select>
+
+    <input type="number" name="qty" placeholder="Số lượng" required>
+
+    <button type="submit">➖ Xuất kho</button>
+</form>
+
+<br>
+
+<table>
+
+    <thead>
+    <tr>
+        <th>Tên sản phẩm</th>
+        <th>Gram</th>
+        <th>Giá</th>
+        <th>Tồn kho</th>
+        <th>Ngày nhập</th>
+        <th>Ngày hết hạn</th>
+        <th>Còn (ngày)</th>
+    </tr>
+    </thead>
+
+    <tbody>
+
+    <tr th:each="i : ${inventories}"
+        th:classappend="${i.daysLeft < 0} ? 'danger' : (${i.daysLeft < 3} ? 'warn' : '')">
+
+        <td th:text="${i.productName}"></td>
+
+        <td th:text="${i.weightGrams}"></td>
+
+        <td th:text="${#numbers.formatDecimal(i.wholesalePrice,0,'COMMA',0,'POINT')}"></td>
+
+        <td th:text="${i.quantity}"></td>
+
+        <td th:text="${i.createdAt != null ? #temporals.format(i.createdAt,'dd/MM/yyyy') : ''}"></td>
+
+        <td th:text="${i.expiredAt != null ? #temporals.format(i.expiredAt,'dd/MM/yyyy') : ''}"></td>
+
+        <td th:text="${i.daysLeft}"></td>
+
+    </tr>
+
+    </tbody>
+
+</table>
+
+</body>
+</html>
