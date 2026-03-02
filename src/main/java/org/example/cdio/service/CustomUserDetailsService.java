@@ -13,9 +13,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
-
     private final UserRepository userRepository;
-
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User u = userRepository.findByUsername(username)
@@ -24,8 +22,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         if (u.getStatus() == User.Status.LOCKED) {
             throw new DisabledException("Tài khoản đã bị khóa");
         }
-
-        String role = "ROLE_" + u.getRole().getName(); // ROLE_ADMIN / ROLE_STORE
+        String role = "ROLE_" + u.getRole().getName();
         return new org.springframework.security.core.userdetails.User(
                 u.getUsername(),
                 u.getPasswordHash(),

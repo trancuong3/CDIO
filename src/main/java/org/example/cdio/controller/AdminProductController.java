@@ -12,11 +12,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RequestMapping("/admin/products")
 public class AdminProductController {
-
     private final ProductService productService;
     private final InventoryService inventoryService;
-
-    // ================= LIST + INVENTORY VIEW =================
     @GetMapping
     public String list(Model model){
 
@@ -24,19 +21,13 @@ public class AdminProductController {
                 inventoryService.inventoryView());
 
         return "admin/product-list";
-    }
-
-    // ================= CREATE =================
-    @GetMapping("/create")
+    }@GetMapping("/create")
     public String createForm(Model model) {
 
         model.addAttribute("product", new Product());
 
         return "admin/product-form";
-    }
-
-    // ================= SAVE =================
-    @PostMapping("/save")
+    }@PostMapping("/save")
     public String save(@ModelAttribute Product product) {
 
         productService.save(product);

@@ -13,23 +13,17 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class Inventory {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     @OneToOne
     @JoinColumn(name = "product_id")
     private Product product;
-
     private Integer quantity;
-
     @Column(name = "min_level")
     private Integer minLevel;
-
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
     @PrePersist
     @PreUpdate
     void time() {

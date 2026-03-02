@@ -40,15 +40,9 @@ public class InventoryService {
                         .minLevel(5)
                         .build());
 
-        // =====================
-        // CỘNG TỒN
-        // =====================
+
         inv.setQuantity(inv.getQuantity() + qty);
         inventoryRepo.save(inv);
-
-        // =====================
-        // LOG GIAO DỊCH
-        // =====================
         StockTransaction tx = StockTransaction.builder()
                 .product(product)
                 .type(StockType.IN)
@@ -108,7 +102,7 @@ public class InventoryService {
                     r[7]==null?null:((Timestamp) r[7]).toLocalDateTime();
 
             Long daysLeft =
-                    r[8]==null?0L:((Number) r[8]).longValue();
+                    r[8]==null?null:((Number) r[8]).longValue();
 
             return new ProductInventoryView(
                     productId,

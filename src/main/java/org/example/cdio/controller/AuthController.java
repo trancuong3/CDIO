@@ -12,20 +12,17 @@ import org.springframework.web.bind.annotation.*;
 @Controller
 @RequiredArgsConstructor
 public class AuthController {
-
     private final AuthService authService;
 
     @GetMapping("/login")
     public String login() {
         return "auth/login";
     }
-
     @GetMapping("/store/register")
     public String registerForm(Model model) {
         model.addAttribute("form", new StoreRegisterRequest());
         return "auth/store-register";
     }
-
     @PostMapping("/store/register")
     public String register(
             @Valid @ModelAttribute("form") StoreRegisterRequest form,
@@ -45,12 +42,10 @@ public class AuthController {
             return "auth/store-register";
         }
     }
-
     @GetMapping("/admin/dashboard")
     public String admin() {
         return "admin/dashboard";
     }
-
     @GetMapping("/store/dashboard")
     public String store() {
         return "store/dashboard";

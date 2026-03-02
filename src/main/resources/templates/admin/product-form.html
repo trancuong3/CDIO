@@ -21,7 +21,8 @@
 
     Giá sỉ:
     <input th:field="*{wholesalePrice}"/><br>
-
+    Hạn dùng (ngày):
+    <input type="number" th:field="*{expiryDays}" min="0"/><br>
     Active:
     <input type="checkbox" th:field="*{isActive}"/><br>
 

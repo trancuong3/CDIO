@@ -11,11 +11,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RequestMapping("/admin/inventory")
 public class AdminInventoryController {
-
     private final InventoryService inventoryService;
     private final ProductRepository productRepo;
-
-    // ================= LIST INVENTORY =================
     @GetMapping
     public String list(Model model) {
 
@@ -27,27 +24,23 @@ public class AdminInventoryController {
 
         return "admin/inventory";
     }
-
-    // ================= STOCK IN =================
     @PostMapping("/in")
     public String stockIn(
             @RequestParam Long productId,
             @RequestParam Integer qty) {
 
-        if(qty<=0) return "redirect:/admin/inventory";
+        if (qty <= 0) return "redirect:/admin/inventory";
 
         inventoryService.stockIn(productId, qty);
 
         return "redirect:/admin/inventory";
     }
-
-    // ================= STOCK OUT =================
     @PostMapping("/out")
     public String stockOut(
             @RequestParam Long productId,
             @RequestParam Integer qty) {
 
-        if(qty<=0) return "redirect:/admin/inventory";
+        if (qty <= 0) return "redirect:/admin/inventory";
 
         inventoryService.stockOut(productId, qty);
 

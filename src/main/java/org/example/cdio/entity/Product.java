@@ -28,7 +28,8 @@ public class Product {
 
     @Column(name = "is_active")
     private Boolean isActive = true;
-
+    @Column(name = "expiry_days")
+    private Integer expiryDays;
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>list</title>
+</head>
+<body>
+<tr th:each="o:${orders}">
+    <td th:text="${o.id}"></td>
+    <td th:text="${o.status}"></td>
+    <td th:text="${o.totalAmount}"></td>
+
+    <td>
+        <form th:action="@{/admin/orders/approve/{id}(id=${o.id})}" method="post">
+            <button>Approve</button>
+        </form>
+    </td>
+</tr>
+
+</body>
+</html>
