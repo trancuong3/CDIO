@@ -1,34 +1,131 @@
-<form th:action="@{/admin/products/save}"
-      th:object="${product}"
-      method="post"
-      enctype="multipart/form-data">
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Thêm / Sửa sản phẩm</title>
 
-    <input type="hidden" th:field="*{id}"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    Tên:
-    <input th:field="*{name}" required/><br><br>
+    <style>
+        body { background:#f4f6f9; }
 
-    Gram:
-    <input type="number" th:field="*{weightGrams}" required/><br><br>
+        .card-form{
+            max-width:700px;
+            margin:auto;
+            border-radius:16px;
+            box-shadow:0 8px 25px rgba(0,0,0,.08);
+        }
 
-    Giá sỉ:
-    <input type="number" step="0.01" th:field="*{wholesalePrice}" required/><br><br>
+        .preview-img{
+            width:120px;
+            height:120px;
+            object-fit:cover;
+            border-radius:12px;
+            border:1px solid #dee2e6;
+        }
+    </style>
+</head>
 
-    Hạn dùng (ngày):
-    <input type="number" th:field="*{expiryDays}" min="0" required/><br><br>
+<body>
 
-    Active:
-    <input type="checkbox" th:field="*{isActive}"/><br><br>
+<div class="container py-5">
 
-    Ảnh:
-    <input type="file" name="imageFile" accept="image/*"/><br><br>
+    <div class="card card-form p-4">
 
-    <!-- Preview nếu đã có ảnh -->
-    <div th:if="${product.img != null}">
-        <img th:src="'data:image/png;base64,' + ${product.img}"
-             width="120"/>
+        <h4 class="mb-4 text-center">
+            📦 Thông tin sản phẩm
+        </h4>
+
+        <form th:action="@{/admin/products/save}"
+              th:object="${product}"
+              method="post"
+              enctype="multipart/form-data">
+
+            <input type="hidden" th:field="*{id}"/>
+
+            <!-- Tên -->
+            <div class="mb-3">
+                <label class="form-label">Tên sản phẩm</label>
+                <input type="text"
+                       class="form-control"
+                       th:field="*{name}"
+                       required>
+            </div>
+
+            <!-- Gram -->
+            <div class="mb-3">
+                <label class="form-label">Trọng lượng (gram)</label>
+                <input type="number"
+                       class="form-control"
+                       th:field="*{weightGrams}"
+                       required>
+            </div>
+
+            <!-- Giá sỉ -->
+            <div class="mb-3">
+                <label class="form-label">Giá sỉ</label>
+                <input type="number"
+                       step="0.01"
+                       class="form-control"
+                       th:field="*{wholesalePrice}"
+                       required>
+            </div>
+
+            <!-- Hạn dùng -->
+            <div class="mb-3">
+                <label class="form-label">Hạn dùng (ngày)</label>
+                <input type="number"
+                       min="0"
+                       class="form-control"
+                       th:field="*{expiryDays}"
+                       required>
+            </div>
+
+            <!-- Active -->
+            <div class="form-check mb-3">
+                <input class="form-check-input"
+                       type="checkbox"
+                       th:field="*{isActive}">
+                <label class="form-check-label">
+                    Kích hoạt sản phẩm
+                </label>
+            </div>
+
+            <!-- Upload ảnh -->
+            <div class="mb-3">
+                <label class="form-label">Ảnh sản phẩm</label>
+                <input type="file"
+                       name="imageFile"
+                       accept="image/*"
+                       class="form-control">
+            </div>
+
+            <!-- Preview -->
+            <div class="mb-3 text-center"
+                 th:if="${product.img != null and !#strings.isEmpty(product.img)}">
+                <label class="form-label d-block">Ảnh hiện tại</label>
+                <img th:src="'data:image/png;base64,' + ${product.img}"
+                     class="preview-img">
+            </div>
+
+            <!-- Buttons -->
+            <div class="d-flex justify-content-between mt-4">
+                <a th:href="@{/admin/products}"
+                   class="btn btn-outline-secondary">
+                    ⬅ Quay lại
+                </a>
+
+                <button type="submit"
+                        class="btn btn-success px-4">
+                    💾 Lưu sản phẩm
+                </button>
+            </div>
+
+        </form>
+
     </div>
-    <a th:href="@{/admin/products}">⬅ Quay lại</a>
 
-    <button type="submit">Lưu</button>
-</form>
+</div>
+
+</body>
+</html>
