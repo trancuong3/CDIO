@@ -33,6 +33,12 @@ public class Order {
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "created_by")
+    private Long createdBy;
+
+    @Column(name = "rejected_reason")
+    private String rejectedReason;
+
     @OneToMany(
             mappedBy = "order",
             cascade = CascadeType.ALL,
