@@ -51,8 +51,8 @@ public class AuthController {
     public String admin() {
         return "admin/dashboard";
     }
-    @GetMapping("/store/dashboard")
-    public String store() {
-        return "store/dashboard";
-    }
+//    @GetMapping("/store/dashboard")
+//    public String store() {
+//        return "store/dashboard";
+//    }
 }

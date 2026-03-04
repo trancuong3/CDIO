@@ -2,52 +2,74 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Quản lý kho gà khô</title>
+    <title>Quản lý sản phẩm</title>
 
     <style>
         body {
-            font-family: Arial;
-            background: #fafafa;
-            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            padding: 30px;
+        }
+
+        h2 { margin-bottom: 20px; }
+
+        .top-bar { margin-bottom: 20px; }
+
+        .btn-add {
+            padding: 8px 14px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
+            background: white;
         }
 
         th, td {
-            border: 1px solid #ccc;
-            padding: 8px;
+            border: 1px solid #ddd;
+            padding: 10px;
             text-align: center;
         }
 
         th {
-            background: #222;
+            background: #343a40;
             color: white;
         }
 
-        .expired {
-            background: #ffcccc;
-        }
+        tr:hover { background: #f1f1f1; }
 
-        .warning {
-            background: #fff3cd;
-        }
-
-        .ok {
-            background: #ccffcc;
-        }
+        .expired { background: #ffe5e5; }
+        .warning { background: #fff3cd; }
+        .ok { background: #e6ffed; }
 
         .badge {
             padding: 4px 8px;
-            border-radius: 5px;
+            border-radius: 4px;
             font-size: 12px;
+            color: white;
         }
 
-        .badge-danger { background: red; color: white }
-        .badge-warning { background: orange; color: white }
-        .badge-success { background: green; color: white }
+        .badge-danger { background: #dc3545; }
+        .badge-warning { background: #ffc107; color: black; }
+        .badge-success { background: #28a745; }
+
+        .action a {
+            text-decoration: none;
+            margin: 0 5px;
+            font-size: 18px;
+        }
+
+        img { border-radius: 5px; }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            text-decoration: none;
+        }
     </style>
 </head>
 
@@ -55,15 +77,15 @@
 
 <h2>📦 QUẢN LÝ KHO GÀ KHÔ</h2>
 
-<a th:href="@{/admin/products/create}">➕ Thêm sản phẩm</a>
-
-<br><br>
+<div class="top-bar">
+    <a th:href="@{/admin/products/create}" class="btn-add">➕ Thêm sản phẩm</a>
+</div>
 
 <table>
-
     <thead>
     <tr>
         <th>ID</th>
+        <th>Ảnh</th>
         <th>Tên</th>
         <th>Gram</th>
         <th>Giá sỉ</th>
@@ -79,27 +101,41 @@
 
     <tbody>
 
+    <!-- QUAN TRỌNG: Không xuống dòng trong expression -->
     <tr th:each="i : ${inventories}"
-        th:classappend="
-        ${i.daysLeft < 0} ? 'expired' :
-        (${i.daysLeft <= 7} ? 'warning' : 'ok')">
+        th:classappend="${i.daysLeft < 0 ? 'expired' : (i.daysLeft <= 7 ? 'warning' : 'ok')}">
 
         <td th:text="${i.productId}"></td>
+
+        <!-- Ảnh -->
+        <td>
+
+            <!-- Nếu có ảnh base64 -->
+            <img th:if="${i.img != null}"
+                 th:src="${'data:image/png;base64,' + i.img}"
+                 width="70"/>
+
+            <!-- Nếu chưa có ảnh -->
+            <img th:if="${i.img == null}"
+                 th:src="@{/images/product-1.png}"
+                 width="70"/>
+
+        </td>
+
         <td th:text="${i.productName}"></td>
         <td th:text="${i.weightGrams}"></td>
         <td th:text="${i.wholesalePrice}"></td>
         <td th:text="${i.quantity}"></td>
 
-        <td th:text="${#temporals.format(i.createdAt,'dd/MM/yyyy')}"></td>
+        <td th:text="${i.createdAt != null ? #temporals.format(i.createdAt,'dd/MM/yyyy') : ''}"></td>
 
         <td th:text="${i.expiryDays}"></td>
 
-        <td th:text="${#temporals.format(i.expiredAt,'dd/MM/yyyy')}"></td>
+        <td th:text="${i.expiredAt != null ? #temporals.format(i.expiredAt,'dd/MM/yyyy') : ''}"></td>
 
-        <td th:text="${i.daysLeft + ' ngày'}"></td>
+        <td th:text="${i.daysLeft != null ? i.daysLeft + ' ngày' : ''}"></td>
 
         <td>
-
             <span th:if="${i.daysLeft < 0}" class="badge badge-danger">
                 HẾT HẠN
             </span>
@@ -111,12 +147,10 @@
             <span th:if="${i.daysLeft > 7}" class="badge badge-success">
                 OK
             </span>
-
         </td>
 
-        <td>
+        <td class="action">
             <a th:href="@{/admin/products/edit/{id}(id=${i.productId})}">✏</a>
-            &nbsp;
             <a th:href="@{/admin/products/delete/{id}(id=${i.productId})}"
                onclick="return confirm('Xóa sản phẩm?')">🗑</a>
         </td>
@@ -124,12 +158,9 @@
     </tr>
 
     </tbody>
-
 </table>
 
-<br>
-
-<a th:href="@{/admin/dashboard}">⬅ Dashboard</a>
+<a th:href="@{/admin/dashboard}" class="back-link">⬅ Dashboard</a>
 
 </body>
 </html>

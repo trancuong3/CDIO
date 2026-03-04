@@ -2,13 +2,15 @@ package org.example.cdio.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "products")
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -28,13 +30,14 @@ public class Product {
 
     @Column(name = "is_active")
     private Boolean isActive = true;
+
     @Column(name = "expiry_days")
     private Integer expiryDays;
-    @Column(name = "created_at")
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String img;
+    // 🔥 Quan trọng
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @PrePersist
-    void init() {
-        createdAt = LocalDateTime.now();
-    }
 }
