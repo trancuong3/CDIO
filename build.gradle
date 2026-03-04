@@ -10,8 +10,16 @@ description = 'CDIO'
 
 java {
     toolchain {
+<<<<<<< HEAD
         languageVersion = JavaLanguageVersion.of(21)
+=======
+        languageVersion = JavaLanguageVersion.of(22)
+>>>>>>> 9c22373 (add shipper UI)
     }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
 }
 
 configurations {
@@ -28,6 +36,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
 
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly 'com.h2database:h2'
     runtimeOnly 'com.mysql:mysql-connector-j'
     runtimeOnly 'com.h2database:h2'
 

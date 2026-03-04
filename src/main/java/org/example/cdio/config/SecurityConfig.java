@@ -1,23 +1,19 @@
 package org.example.cdio.config;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.example.cdio.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+<<<<<<< HEAD
 import org.springframework.security.core.Authentication;
+=======
+>>>>>>> 9c22373 (add shipper UI)
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-
-import java.io.IOException;
 
 @Configuration
 @EnableWebSecurity
@@ -33,7 +29,11 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
+<<<<<<< HEAD
                     .anyRequest().permitAll()
+=======
+                        .anyRequest().permitAll()
+>>>>>>> 9c22373 (add shipper UI)
                 )
 
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -43,20 +43,6 @@ public class SecurityConfig {
                 .userDetailsService(userDetailsService);
 
         return http.build();
-    }
-
-    @Bean
-    public AuthenticationSuccessHandler successHandler() {
-        return (request, response, authentication) -> {
-
-            String role = authentication.getAuthorities().iterator().next().getAuthority();
-
-            if (role.equals("ROLE_ADMIN")) {
-                response.sendRedirect("/admin/dashboard");
-            } else {
-                response.sendRedirect("/store/dashboard");
-            }
-        };
     }
 
     @Bean

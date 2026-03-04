@@ -57,6 +57,7 @@
         <h4>🛒 Đại Lý Khô Gà</h4>
         <div class="text-white">
             Xin chào, <b>Đại lý Demo</b>
+            <button type="button" id="deliveryButton" class="btn btn-light btn-sm ms-2" title="Giao hàng">🛵</button>
             <a href="/logout" class="btn btn-light btn-sm ms-3">Đăng xuất</a>
         </div>
     </div>
@@ -178,6 +179,10 @@
 
 <script>
     $(document).ready(function () {
+
+        $("#deliveryButton").on("click", function () {
+            window.location.href = "/shipper-dashboard";
+        });
 
         $("#searchInput").on("keyup", function () {
 
