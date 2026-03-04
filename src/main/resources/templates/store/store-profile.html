@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Hồ sơ Đại lý - Hệ thống Khô Gà</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; }
+
+        /* Khớp màu Topbar với Dashboard */
+        .topbar {
+            background: linear-gradient(45deg,#ff9800,#ff5722);
+            padding: 12px 0;
+            color: white;
+        }
+
+        .topbar h4 { margin: 0; }
+
+        /* Card bo tròn 16px giống thẻ sản phẩm */
+        .profile-card {
+            border-radius: 16px;
+            border: none;
+            overflow: hidden;
+        }
+
+        .section-title {
+            color: #ff5722;
+            font-weight: bold;
+            border-left: 4px solid #ff9800;
+            padding-left: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Nút lưu dùng gradient giống nút "Thêm vào giỏ" */
+        .btn-save {
+            background: linear-gradient(45deg,#ff9800,#ff5722);
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 10px 30px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .btn-save:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 87, 34, 0.3);
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-control {
+            border-radius: 8px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="topbar mb-5">
+    <div class="container d-flex justify-content-between align-items-center">
+        <h4>🛒 Đại Lý Khô Gà</h4>
+        <div class="d-flex align-items-center">
+            <span class="me-3">Xin chào, <b th:text="${user.fullName}">Đại lý Demo</b></span>
+            <a href="/store/dashboard" class="btn btn-light btn-sm fw-bold">🏠 Về trang chủ</a>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+
+            <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="border-radius: 12px;">
+                <strong>🎉 Thành công!</strong> Hồ sơ của bạn đã được cập nhật.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div class="card profile-card shadow-sm">
+                <div class="card-body p-4 p-md-5">
+                    <h2 class="fw-bold mb-4 text-dark">Hồ sơ Đại lý</h2>
+
+                    <form action="/store/profile/update" method="post">
+
+                        <div class="section-title">Thông tin Cửa hàng / Đại lý</div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Tên cửa hàng</label>
+                                <input type="text" class="form-control bg-light" th:value="${store.name}" readonly>
+                                <small class="text-muted text-italic">* Liên hệ Admin để đổi tên cửa hàng</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Người đại diện</label>
+                                <input type="text" class="form-control" name="representativeName" th:value="${store.representativeName}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Số điện thoại liên hệ</label>
+                                <input type="text" class="form-control" name="phone" th:value="${store.phone}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Địa chỉ giao hàng mặc định</label>
+                                <input type="text" class="form-control" name="address" th:value="${store.address}">
+                            </div>
+                        </div>
+
+                        <div class="section-title">Thông tin Đăng nhập</div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tên đăng nhập (Username)</label>
+                                <input type="text" class="form-control bg-light" th:value="${user.username}" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Họ tên chủ tài khoản</label>
+                                <input type="text" class="form-control" name="fullName" th:value="${user.fullName}">
+                            </div>
+                        </div>
+
+                        <div class="mt-5 pt-3 border-top text-end">
+                            <button type="submit" class="btn btn-save shadow-sm">
+                                💾 Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
