@@ -14,6 +14,11 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
     private final AuthService authService;
 
+    @GetMapping("/")
+    public String home() {
+        return "redirect:/store/dashboard";
+    }
+
     @GetMapping("/login")
     public String login() {
         return "auth/login";
