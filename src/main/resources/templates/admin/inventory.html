@@ -2,54 +2,58 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Inventory</title>
+    <title>Quản lý tồn kho</title>
 
     <style>
-        body{
+        body {
             font-family: Arial;
-            padding:20px;
-            background:#f4f6f9;
+            padding: 25px;
+            background: #f4f6f9;
         }
 
-        h2{
-            margin-bottom:10px;
+        h2 {
+            margin-bottom: 15px;
         }
 
-        table{
-            width:100%;
-            border-collapse:collapse;
-            background:white;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
         }
 
-        th,td{
-            border:1px solid #ddd;
-            padding:8px;
-            text-align:center;
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
         }
 
-        th{
-            background:#222;
-            color:white;
+        th {
+            background: #222;
+            color: white;
         }
 
-        tr:nth-child(even){
-            background:#f2f2f2;
+        tr:hover {
+            background: #f1f1f1;
         }
 
-        .danger{
-            background:#ffcccc !important;
+        .danger {
+            background: #ffcccc !important;
         }
 
-        .warn{
-            background:#fff3cd !important;
+        .warn {
+            background: #fff3cd !important;
         }
 
-        form{
-            margin-bottom:15px;
+        form {
+            margin-bottom: 15px;
         }
 
-        input,select,button{
-            padding:6px;
+        input, select, button {
+            padding: 6px;
+        }
+
+        img {
+            border-radius: 5px;
         }
 
     </style>
@@ -59,32 +63,34 @@
 
 <h2>📦 QUẢN LÝ TỒN KHO</h2>
 
-<!-- ===== NHẬP ===== -->
+<!-- ===== NHẬP KHO ===== -->
 <form th:action="@{/admin/inventory/in}" method="post">
 
-    <select name="productId">
+    <select name="productId" required>
+        <option value="">-- Chọn sản phẩm --</option>
         <option th:each="p : ${products}"
                 th:value="${p.id}"
                 th:text="${p.name}">
         </option>
     </select>
 
-    <input type="number" name="qty" placeholder="Số lượng" required>
+    <input type="number" name="qty" placeholder="Số lượng" min="1" required>
 
     <button type="submit">➕ Nhập kho</button>
 </form>
 
-<!-- ===== XUẤT ===== -->
+<!-- ===== XUẤT KHO ===== -->
 <form th:action="@{/admin/inventory/out}" method="post">
 
-    <select name="productId">
+    <select name="productId" required>
+        <option value="">-- Chọn sản phẩm --</option>
         <option th:each="p : ${products}"
                 th:value="${p.id}"
                 th:text="${p.name}">
         </option>
     </select>
 
-    <input type="number" name="qty" placeholder="Số lượng" required>
+    <input type="number" name="qty" placeholder="Số lượng" min="1" required>
 
     <button type="submit">➖ Xuất kho</button>
 </form>
@@ -95,6 +101,7 @@
 
     <thead>
     <tr>
+        <th>Ảnh</th>
         <th>Tên sản phẩm</th>
         <th>Gram</th>
         <th>Giá</th>
@@ -107,8 +114,20 @@
 
     <tbody>
 
+    <!-- QUAN TRỌNG: Sửa toán tử 3 ngôi cho đúng -->
     <tr th:each="i : ${inventories}"
-        th:classappend="${i.daysLeft < 0} ? 'danger' : (${i.daysLeft < 3} ? 'warn' : '')">
+        th:classappend="${i.daysLeft < 0 ? 'danger' : (i.daysLeft < 3 ? 'warn' : '')}">
+
+        <!-- Ảnh -->
+        <td>
+            <img th:if="${i.img != null}"
+                 th:src="${'data:image/png;base64,' + i.img}"
+                 width="60"/>
+
+            <img th:if="${i.img == null}"
+                 th:src="@{/images/product-1.png}"
+                 width="60"/>
+        </td>
 
         <td th:text="${i.productName}"></td>
 
@@ -122,7 +141,7 @@
 
         <td th:text="${i.expiredAt != null ? #temporals.format(i.expiredAt,'dd/MM/yyyy') : ''}"></td>
 
-        <td th:text="${i.daysLeft}"></td>
+        <td th:text="${i.daysLeft != null ? i.daysLeft : ''}"></td>
 
     </tr>
 

@@ -33,7 +33,9 @@ public class Product {
 
     @Column(name = "expiry_days")
     private Integer expiryDays;
-
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String img;
     // 🔥 Quan trọng
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

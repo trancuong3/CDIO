@@ -7,6 +7,10 @@ import org.example.cdio.service.ProductService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.Base64;
 
 @Controller
 @RequiredArgsConstructor
@@ -30,7 +34,21 @@ public class AdminProductController {
     }
 
     @PostMapping("/save")
-    public String save(@ModelAttribute Product product) {
+    public String save(
+            @ModelAttribute Product product,
+            @RequestParam("imageFile") MultipartFile file
+    ) throws IOException {
+
+        if (!file.isEmpty()) {
+            String base64 = Base64.getEncoder()
+                    .encodeToString(file.getBytes());
+            product.setImg(base64);
+        } else if (product.getId() != null) {
+            // Nếu update mà không chọn ảnh mới -> giữ ảnh cũ
+            Product existing = productService.findById(product.getId());
+            product.setImg(existing.getImg());
+        }
+
         productService.save(product);
         return "redirect:/admin/products";
     }

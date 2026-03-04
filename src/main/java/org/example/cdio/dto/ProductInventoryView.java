@@ -1,13 +1,12 @@
 package org.example.cdio.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-@Data
-@AllArgsConstructor
+@Getter
+@Setter
 public class ProductInventoryView {
 
     private Long productId;
@@ -19,4 +18,38 @@ public class ProductInventoryView {
     private Integer expiryDays;
     private LocalDateTime expiredAt;
     private Long daysLeft;
+
+    // 🔥 THÊM DÒNG NÀY
+    private String img;
+
+    // constructor
+    public ProductInventoryView(Long productId,
+                                String productName,
+                                Integer weightGrams,
+                                BigDecimal wholesalePrice,
+                                Integer quantity,
+                                LocalDateTime createdAt,
+                                Integer expiryDays,
+                                LocalDateTime expiredAt,
+                                Long daysLeft,
+                                String img) {   // 🔥 thêm vào constructor
+
+        this.productId = productId;
+        this.productName = productName;
+        this.weightGrams = weightGrams;
+        this.wholesalePrice = wholesalePrice;
+        this.quantity = quantity;
+        this.createdAt = createdAt;
+        this.expiryDays = expiryDays;
+        this.expiredAt = expiredAt;
+        this.daysLeft = daysLeft;
+        this.img = img;
+    }
+
+    // getter
+    public String getImg() {
+        return img;
+    }
+
+    // các getter khác giữ nguyên
 }

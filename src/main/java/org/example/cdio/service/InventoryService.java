@@ -96,7 +96,8 @@ public class InventoryService {
                             created,
                             expiryDays,
                             expiredAt,
-                            daysLeft
+                            daysLeft,
+                            p.getImg()   // 👈 THÊM DÒNG NÀY
                     );
                 })
                 .collect(Collectors.toList());

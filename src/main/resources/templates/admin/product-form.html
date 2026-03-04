@@ -1,15 +1,7 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Product</title>
-</head>
-
-<body>
-
-<h2>FORM SẢN PHẨM</h2>
-
-<form th:action="@{/admin/products/save}" th:object="${product}" method="post">
+<form th:action="@{/admin/products/save}"
+      th:object="${product}"
+      method="post"
+      enctype="multipart/form-data">
 
     <input type="hidden" th:field="*{id}"/>
 
@@ -28,11 +20,15 @@
     Active:
     <input type="checkbox" th:field="*{isActive}"/><br><br>
 
+    Ảnh:
+    <input type="file" name="imageFile" accept="image/*"/><br><br>
+
+    <!-- Preview nếu đã có ảnh -->
+    <div th:if="${product.img != null}">
+        <img th:src="'data:image/png;base64,' + ${product.img}"
+             width="120"/>
+    </div>
+    <a th:href="@{/admin/products}">⬅ Quay lại</a>
+
     <button type="submit">Lưu</button>
-
 </form>
-
-<a th:href="@{/admin/products}">⬅ Quay lại</a>
-
-</body>
-</html>
