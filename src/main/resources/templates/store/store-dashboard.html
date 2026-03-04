@@ -2,126 +2,211 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Đại lý - Hệ thống Khô Gà</title>
+    <title>Mua khô gà sỉ</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
-        body {
-            background-color: #f4f6f9;
+        body { background: #f8f9fa; }
+
+        .topbar {
+            background: linear-gradient(45deg,#ff9800,#ff5722);
+            padding: 12px 0;
         }
 
-        .sidebar {
-            min-height: 100vh;
-            background-color: #212529;
-            color: white;
-        }
-
-        .sidebar a {
-            color: #adb5bd;
-            text-decoration: none;
-            padding: 12px;
-            display: block;
-            border-radius: 5px;
-        }
-
-        .sidebar a:hover {
-            background-color: #f39c12;
-            color: white;
-        }
+        .topbar h4 { color: white; margin: 0; }
 
         .product-card {
-            transition: all 0.2s ease-in-out;
+            border-radius: 16px;
+            transition: all .25s ease;
         }
 
         .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            transform: translateY(-6px);
+            box-shadow: 0 10px 25px rgba(0,0,0,.15);
         }
 
         .product-img {
-            height: 200px;
+            height: 220px;
             object-fit: cover;
-            border-top-left-radius: .5rem;
-            border-top-right-radius: .5rem;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+        }
+
+        .price {
+            font-weight: bold;
+            color: #e53935;
+        }
+
+        .btn-cart {
+            background: linear-gradient(45deg,#ff9800,#ff5722);
+            border: none;
+            color: white;
+        }
+
+        #noResult {
+            display: none;
         }
     </style>
 </head>
-
 <body>
 
-<div class="d-flex">
-
-    <!-- SIDEBAR -->
-    <div class="sidebar p-3" style="width: 250px;">
-        <h4 class="text-warning text-center fw-bold mt-2 mb-4">Đại Lý Khô Gà</h4>
-
-        <a href="#">📦 Đặt hàng</a>
-        <a href="#">📝 Đơn hàng của tôi</a>
-        <a href="#">
-            🔔 Thông báo
-            <span class="badge bg-danger float-end">3</span>
-        </a>
-        <a href="#">💳 Hóa đơn</a>
-    </div>
-
-    <!-- CONTENT -->
-    <div class="flex-grow-1 p-4">
-
-        <!-- HEADER -->
-        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-            <h2 class="m-0">Sản phẩm đặt hàng sỉ</h2>
-
-            <div>
-                <span>Xin chào, <b>Đại lý Demo</b></span>
-                <a href="/logout" class="btn btn-sm btn-outline-danger ms-3">Đăng xuất</a>
-            </div>
+<!-- HEADER -->
+<div class="topbar">
+    <div class="container d-flex justify-content-between align-items-center">
+        <h4>🛒 Đại Lý Khô Gà</h4>
+        <div class="text-white">
+            Xin chào, <b>Đại lý Demo</b>
+            <a href="/logout" class="btn btn-light btn-sm ms-3">Đăng xuất</a>
         </div>
-
-        <!-- PRODUCT GRID -->
-        <div class="row g-4">
-
-            <div class="col-lg-3 col-md-4 col-sm-6"
-                 th:each="sp : ${products}">
-
-                <div class="card product-card border-0 shadow-sm h-100 rounded-3">
-
-                    <!-- ẢNH BASE64 / DEFAULT -->
-                    <img class="product-img"
-                         th:src="${(sp.img != null and sp.img != '')
-                                    ? 'data:image/png;base64,' + sp.img
-                                    : '/images/product-3.png'}"
-                         alt="Khô gà">
-
-                    <div class="card-body text-center d-flex flex-column">
-
-                        <h5 class="card-title fw-bold"
-                            th:text="${sp.name}">
-                        </h5>
-
-                        <h5 class="text-danger fw-bold"
-                            th:text="${#numbers.formatDecimal(sp.wholesalePrice,0,'COMMA',0,'POINT')}
-                                     + ' đ / ' + ${sp.weightGrams} + 'g'">
-                        </h5>
-
-                        <p class="text-muted small mb-3">
-                            Hạn dùng:
-                            <span th:text="${sp.expiryDays}"></span> ngày
-                        </p>
-
-                        <button class="btn btn-warning fw-bold text-white mt-auto">
-                            🛒 Thêm vào giỏ
-                        </button>
-
-                    </div>
-                </div>
-
-            </div>
-
-        </div>
-
     </div>
 </div>
+
+<div class="container py-4">
+
+    <!-- TOOLBAR -->
+    <div class="row mb-4 align-items-center">
+
+        <!-- SEARCH -->
+        <div class="col-md-4">
+            <input type="text"
+                   id="searchInput"
+                   class="form-control"
+                   placeholder="🔍 Tìm sản phẩm...">
+        </div>
+
+        <!-- FILTER UI (chỉ thiết kế) -->
+        <div class="col-md-3">
+            <select class="form-select">
+                <option>Sắp xếp theo giá</option>
+                <option>Giá tăng dần</option>
+                <option>Giá giảm dần</option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <select class="form-select">
+                <option>Lọc theo trọng lượng</option>
+                <option>100g</option>
+                <option>200g</option>
+                <option>500g</option>
+            </select>
+        </div>
+
+        <div class="col-md-2 text-end">
+            <button class="btn btn-outline-dark">
+                🛒 Giỏ hàng (0)
+            </button>
+        </div>
+
+    </div>
+
+    <!-- PRODUCT GRID -->
+    <div class="row g-4" id="productContainer">
+
+        <div class="col-lg-3 col-md-4 col-sm-6 product-item"
+             th:each="sp : ${productPage.content}">
+
+            <div class="card product-card h-100 shadow-sm">
+
+                <img class="product-img"
+                     th:src="${(sp.img != null and sp.img != '')
+                                ? 'data:image/png;base64,' + sp.img
+                                : '/images/product-3.png'}"
+                     alt="Khô gà">
+
+                <div class="card-body text-center d-flex flex-column">
+
+                    <h5 class="fw-bold product-name"
+                        th:text="${sp.name}">
+                    </h5>
+
+                    <div class="price mb-2"
+                         th:text="${#numbers.formatDecimal(sp.wholesalePrice,0,'COMMA',0,'POINT')}
+                                  + ' đ / ' + ${sp.weightGrams} + 'g'">
+                    </div>
+
+                    <p class="text-muted small mb-3">
+                        Hạn dùng:
+                        <span th:text="${sp.expiryDays}"></span> ngày
+                    </p>
+
+                    <button class="btn btn-cart mt-auto fw-bold">
+                        🛒 Thêm vào giỏ
+                    </button>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- NO RESULT -->
+    <div id="noResult" class="text-center mt-5">
+        <h5 class="text-danger">❌ Không tìm thấy sản phẩm</h5>
+    </div>
+
+    <!-- PAGINATION -->
+    <nav class="mt-5">
+        <ul class="pagination justify-content-center">
+            <li class="page-item"
+                th:classappend="${productPage.first} ? 'disabled'">
+                <a class="page-link"
+                   th:href="@{/store/dashboard(page=${currentPage-1})}">←</a>
+            </li>
+
+            <li class="page-item"
+                th:each="i : ${#numbers.sequence(0, productPage.totalPages-1)}"
+                th:classappend="${i == currentPage} ? 'active'">
+                <a class="page-link"
+                   th:href="@{/store/dashboard(page=${i})}"
+                   th:text="${i+1}"></a>
+            </li>
+
+            <li class="page-item"
+                th:classappend="${productPage.last} ? 'disabled'">
+                <a class="page-link"
+                   th:href="@{/store/dashboard(page=${currentPage+1})}">→</a>
+            </li>
+        </ul>
+    </nav>
+
+</div>
+
+<!-- JQUERY -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+
+        $("#searchInput").on("keyup", function () {
+
+            let value = $(this).val().toLowerCase();
+            let found = false;
+
+            $(".product-item").filter(function () {
+
+                let text = $(this).find(".product-name").text().toLowerCase();
+
+                if (text.indexOf(value) > -1) {
+                    $(this).show();
+                    found = true;
+                } else {
+                    $(this).hide();
+                }
+
+            });
+
+            if (!found) {
+                $("#noResult").show();
+            } else {
+                $("#noResult").hide();
+            }
+
+        });
+
+    });
+</script>
 
 </body>
 </html>
