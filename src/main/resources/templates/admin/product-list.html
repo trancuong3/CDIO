@@ -90,13 +90,13 @@
         <td th:text="${i.wholesalePrice}"></td>
         <td th:text="${i.quantity}"></td>
 
-        <td th:text="${#temporals.format(i.createdAt,'dd/MM/yyyy')}"></td>
+        <td th:text="${i.createdAt != null ? #temporals.format(i.createdAt,'dd/MM/yyyy') : ''}"></td>
 
         <td th:text="${i.expiryDays}"></td>
 
-        <td th:text="${#temporals.format(i.expiredAt,'dd/MM/yyyy')}"></td>
+        <td th:text="${i.expiredAt != null ? #temporals.format(i.expiredAt,'dd/MM/yyyy') : ''}"></td>
 
-        <td th:text="${i.daysLeft + ' ngày'}"></td>
+        <td th:text="${i.daysLeft != null ? i.daysLeft + ' ngày' : ''}"></td>
 
         <td>
 

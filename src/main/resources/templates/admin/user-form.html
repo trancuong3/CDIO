@@ -1,0 +1,52 @@
+<h2 th:text="${user != null} ? 'CHỈNH SỬA USER' : 'TẠO USER'"></h2>
+
+<form th:action="${user != null} ? @{/admin/users/update} : @{/admin/users/create}"
+      method="post">
+
+    <input type="hidden" name="id" th:value="${user != null ? user.id : ''}"/>
+
+    Username:
+    <input name="username"
+           th:value="${user != null ? user.username : ''}"
+           th:readonly="${user != null}"
+           required/>
+    <br><br>
+
+    <!-- Password chỉ hiện khi tạo -->
+    <div th:if="${user == null}">
+        Password:
+        <input type="password" name="password" required/>
+        <br><br>
+    </div>
+
+    Full Name:
+    <input name="fullName"
+           th:value="${user != null ? user.fullName : ''}"
+           required/>
+    <br><br>
+
+    Role:
+    <select name="roleId">
+        <option th:each="r : ${roles}"
+                th:value="${r.id}"
+                th:text="${r.name}"
+                th:selected="${user != null and user.role.id == r.id}">
+        </option>
+    </select>
+    <br><br>
+
+    Store:
+    <select name="storeId">
+        <option value="">--None--</option>
+        <option th:each="s : ${stores}"
+                th:value="${s.id}"
+                th:text="${s.name}"
+                th:selected="${user != null and user.store != null and user.store.id == s.id}">
+        </option>
+    </select>
+    <br><br>
+
+    <button type="submit">Save</button>
+</form>
+
+<a th:href="@{/admin/users}">⬅ Back</a>

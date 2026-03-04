@@ -14,17 +14,19 @@
     <input type="hidden" th:field="*{id}"/>
 
     Tên:
-    <input th:field="*{name}"/><br>
+    <input th:field="*{name}" required/><br><br>
 
     Gram:
-    <input th:field="*{weightGrams}"/><br>
+    <input type="number" th:field="*{weightGrams}" required/><br><br>
 
     Giá sỉ:
-    <input th:field="*{wholesalePrice}"/><br>
+    <input type="number" step="0.01" th:field="*{wholesalePrice}" required/><br><br>
+
     Hạn dùng (ngày):
-    <input type="number" th:field="*{expiryDays}" min="0"/><br>
+    <input type="number" th:field="*{expiryDays}" min="0" required/><br><br>
+
     Active:
-    <input type="checkbox" th:field="*{isActive}"/><br>
+    <input type="checkbox" th:field="*{isActive}"/><br><br>
 
     <button type="submit">Lưu</button>
 

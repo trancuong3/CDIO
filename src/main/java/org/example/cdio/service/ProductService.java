@@ -1,36 +1,59 @@
-    package org.example.cdio.service;
+package org.example.cdio.service;
 
-    import lombok.RequiredArgsConstructor;
-    import org.example.cdio.entity.Product;
-    import org.example.cdio.repository.ProductRepository;
-    import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.example.cdio.entity.Inventory;
+import org.example.cdio.entity.Product;
+import org.example.cdio.repository.InventoryRepository;
+import org.example.cdio.repository.ProductRepository;
+import org.springframework.stereotype.Service;
 
-    import java.util.List;
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ProductService {
 
-    @Service
-    @RequiredArgsConstructor
-    public class ProductService {
+    private final ProductRepository productRepo;
+    private final InventoryRepository inventoryRepo;
 
-        private final ProductRepository repo;
+    public void save(Product product) {
 
-        public List<Product> findAll() {
-            return repo.findAll();
+        // ===== UPDATE =====
+        if (product.getId() != null) {
+
+            Product existing = productRepo.findById(product.getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+
+            // 🔥 Giữ nguyên createdAt
+            product.setCreatedAt(existing.getCreatedAt());
         }
 
-        public Product findById(Long id) {
-            return repo.findById(id).orElseThrow();
-        }
+        Product saved = productRepo.save(product);
 
-        public void save(Product product) {
-            repo.save(product);
-        }
-
-        // SOFT DELETE
-        public void delete(Long id) {
-            Product p = repo.findById(id)
-                    .orElseThrow();
-
-            p.setIsActive(false);
-            repo.save(p);
-        }
+        // Nếu chưa có inventory thì tạo mới
+        inventoryRepo.findByProductId(saved.getId())
+                .orElseGet(() -> {
+                    Inventory inv = Inventory.builder()
+                            .product(saved)
+                            .quantity(0)
+                            .minLevel(5)
+                            .build();
+                    return inventoryRepo.save(inv);
+                });
     }
+
+    public Product findById(Long id) {
+        return productRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+    }
+
+    // Soft delete
+    public void delete(Long id) {
+
+        Product product = productRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+
+        product.setIsActive(false);
+        productRepo.save(product);
+    }
+}
