@@ -4,150 +4,198 @@
     <meta charset="UTF-8">
     <title>Quản lý tồn kho</title>
 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <style>
-        body {
-            font-family: Arial;
-            padding: 25px;
-            background: #f4f6f9;
+        body { background:#f4f6f9; }
+
+        .sidebar{
+            width:240px;
+            min-height:100vh;
+            background:#1e293b;
+            color:white;
+            position:fixed;
         }
 
-        h2 {
-            margin-bottom: 15px;
+        .sidebar h4{
+            padding:20px;
+            text-align:center;
+            background:#0f172a;
+            margin:0;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
+        .sidebar a{
+            display:block;
+            padding:12px 20px;
+            color:#cbd5e1;
+            text-decoration:none;
         }
 
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
+        .sidebar a:hover{
+            background:#f59e0b;
+            color:white;
         }
 
-        th {
-            background: #222;
-            color: white;
+        .content{
+            margin-left:240px;
+            padding:30px;
         }
 
-        tr:hover {
-            background: #f1f1f1;
+        .topbar{
+            background:white;
+            padding:15px 25px;
+            border-radius:12px;
+            box-shadow:0 4px 10px rgba(0,0,0,.05);
+            margin-bottom:25px;
         }
 
-        .danger {
-            background: #ffcccc !important;
+        .product-img{
+            width:80px;
+            height:80px;
+            object-fit:cover;
+            border-radius:10px;
+            border:1px solid #dee2e6;
         }
 
-        .warn {
-            background: #fff3cd !important;
+        table{
+            background:white;
+            border-radius:12px;
+            overflow:hidden;
         }
 
-        form {
-            margin-bottom: 15px;
-        }
+        /* Màu trạng thái */
+        .status-good{ background:#e6f9ed; }
+        .status-warning{ background:#fff8e1; }
+        .status-low{ background:#ffe8cc; }
+        .status-expired{ background:#ffe5e5; }
 
-        input, select, button {
-            padding: 6px;
-        }
-
-        img {
-            border-radius: 5px;
-        }
-
+        .badge-good{ background:#28a745; }
+        .badge-warning{ background:#ffc107; color:black; }
+        .badge-low{ background:#fd7e14; }
+        .badge-expired{ background:#dc3545; }
     </style>
 </head>
 
 <body>
 
-<h2>📦 QUẢN LÝ TỒN KHO</h2>
+<div class="sidebar">
+    <h4>🛠 ADMIN</h4>
+    <a th:href="@{/admin/products}">📦 Quản lý sản phẩm</a>
+    <a th:href="@{/admin/inventory}">📊 Quản lý tồn kho</a>
+    <a th:href="@{/admin/orders}">🧾 Duyệt đơn hàng</a>
+    <a th:href="@{/admin/users}">👤 Quản lý User</a>
+    <a th:href="@{/logout}" class="text-danger">🚪 Logout</a>
+</div>
 
-<!-- ===== NHẬP KHO ===== -->
-<form th:action="@{/admin/inventory/in}" method="post">
+<div class="content">
 
-    <select name="productId" required>
-        <option value="">-- Chọn sản phẩm --</option>
-        <option th:each="p : ${products}"
-                th:value="${p.id}"
-                th:text="${p.name}">
-        </option>
-    </select>
+    <div class="topbar d-flex justify-content-between align-items-center">
+        <h4 class="m-0">📊 Quản lý tồn kho</h4>
+    </div>
 
-    <input type="number" name="qty" placeholder="Số lượng" min="1" required>
+    <!-- FORM NHẬP / XUẤT -->
+    <div class="card p-3 mb-4 shadow-sm">
+        <div class="row">
+            <!-- Nhập kho -->
+            <div class="col-md-6">
+                <form th:action="@{/admin/inventory/in}" method="post" class="d-flex gap-2">
+                    <select name="productId" class="form-select" required>
+                        <option value="">Chọn sản phẩm</option>
+                        <option th:each="p:${products}"
+                                th:value="${p.id}"
+                                th:text="${p.name}">
+                        </option>
+                    </select>
 
-    <button type="submit">➕ Nhập kho</button>
-</form>
+                    <input type="number"
+                           name="qty"
+                           min="1"
+                           class="form-control"
+                           placeholder="Số lượng"
+                           required>
 
-<!-- ===== XUẤT KHO ===== -->
-<form th:action="@{/admin/inventory/out}" method="post">
+                    <button class="btn btn-success">Nhập</button>
+                </form>
+            </div>
 
-    <select name="productId" required>
-        <option value="">-- Chọn sản phẩm --</option>
-        <option th:each="p : ${products}"
-                th:value="${p.id}"
-                th:text="${p.name}">
-        </option>
-    </select>
+            <!-- Xuất kho -->
+            <div class="col-md-6">
+                <form th:action="@{/admin/inventory/out}" method="post" class="d-flex gap-2">
+                    <select name="productId" class="form-select" required>
+                        <option value="">Chọn sản phẩm</option>
+                        <option th:each="p:${products}"
+                                th:value="${p.id}"
+                                th:text="${p.name}">
+                        </option>
+                    </select>
 
-    <input type="number" name="qty" placeholder="Số lượng" min="1" required>
+                    <input type="number"
+                           name="qty"
+                           min="1"
+                           class="form-control"
+                           placeholder="Số lượng"
+                           required>
 
-    <button type="submit">➖ Xuất kho</button>
-</form>
+                    <button class="btn btn-danger">Xuất</button>
+                </form>
+            </div>
+        </div>
+    </div>
 
-<br>
+    <!-- BẢNG TỒN KHO -->
+    <table class="table table-hover shadow-sm text-center align-middle">
+        <thead class="table-dark">
+        <tr>
+            <th>Ảnh</th>
+            <th>Tên</th>
+            <th>Tồn</th>
+            <th>Hết hạn</th>
+            <th>Còn</th>
+        </tr>
+        </thead>
 
-<table>
+        <tbody>
+        <tr th:each="i:${inventories}"
+            th:classappend="${
+                i.daysLeft <= 0 ? 'status-expired' :
+                (i.daysLeft <=7 ? 'status-low' :
+                (i.daysLeft <=30 ? 'status-warning' :
+                'status-good'))
+            }">
 
-    <thead>
-    <tr>
-        <th>Ảnh</th>
-        <th>Tên sản phẩm</th>
-        <th>Gram</th>
-        <th>Giá</th>
-        <th>Tồn kho</th>
-        <th>Ngày nhập</th>
-        <th>Ngày hết hạn</th>
-        <th>Còn (ngày)</th>
-    </tr>
-    </thead>
+            <td>
+                <img th:src="${
+                        i.img != null and !#strings.isEmpty(i.img)
+                        ? (i.img.startsWith('data')
+                            ? i.img
+                            : 'data:image/png;base64,' + i.img)
+                        : '/images/product-3.png'
+                    }"
+                     class="product-img"/>
+            </td>
 
-    <tbody>
+            <td th:text="${i.productName}"></td>
 
-    <!-- QUAN TRỌNG: Sửa toán tử 3 ngôi cho đúng -->
-    <tr th:each="i : ${inventories}"
-        th:classappend="${i.daysLeft < 0 ? 'danger' : (i.daysLeft < 3 ? 'warn' : '')}">
+            <td th:text="${i.quantity}"></td>
 
-        <!-- Ảnh -->
-        <td>
-            <img th:if="${i.img != null}"
-                 th:src="${'data:image/png;base64,' + i.img}"
-                 width="60"/>
+            <td th:text="${#temporals.format(i.expiredAt,'dd/MM/yyyy')}"></td>
 
-            <img th:if="${i.img == null}"
-                 th:src="@{/images/product-1.png}"
-                 width="60"/>
-        </td>
+            <td>
+                <span class="badge"
+                      th:classappend="${
+                        i.daysLeft <= 0 ? 'badge-expired' :
+                        (i.daysLeft <=7 ? 'badge-low' :
+                        (i.daysLeft <=30 ? 'badge-warning' :
+                        'badge-good'))
+                      }"
+                      th:text="${i.daysLeft <= 0 ? 'Quá hạn' : i.daysLeft + ' ngày'}">
+                </span>
+            </td>
 
-        <td th:text="${i.productName}"></td>
+        </tr>
+        </tbody>
+    </table>
 
-        <td th:text="${i.weightGrams}"></td>
-
-        <td th:text="${#numbers.formatDecimal(i.wholesalePrice,0,'COMMA',0,'POINT')}"></td>
-
-        <td th:text="${i.quantity}"></td>
-
-        <td th:text="${i.createdAt != null ? #temporals.format(i.createdAt,'dd/MM/yyyy') : ''}"></td>
-
-        <td th:text="${i.expiredAt != null ? #temporals.format(i.expiredAt,'dd/MM/yyyy') : ''}"></td>
-
-        <td th:text="${i.daysLeft != null ? i.daysLeft : ''}"></td>
-
-    </tr>
-
-    </tbody>
-
-</table>
-
+</div>
 </body>
 </html>
