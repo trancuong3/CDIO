@@ -3,6 +3,7 @@ package org.example.cdio.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.cdio.entity.Order;
+import org.example.cdio.entity.OrderStatus;
 import org.example.cdio.dto.StoreRegisterRequest;
 import org.example.cdio.entity.OrderItem;
 import org.example.cdio.entity.Store;
@@ -13,10 +14,12 @@ import org.example.cdio.service.AuthService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -46,6 +49,8 @@ public class AuthController {
 
     @GetMapping("/staff/dashboard")
     public String staff(@RequestParam(value = "orderId", required = false) Long orderId, Model model) {
+        model.addAttribute("orderStatuses", Arrays.asList(OrderStatus.values()));
+
         List<OrderItem> allItems = orderItemRepository.findAllWithDetails();
 
         if (allItems.isEmpty()) {
@@ -95,15 +100,29 @@ public class AuthController {
             @RequestParam("orderId") Long orderId,
             @RequestParam("deliveryDate") LocalDate deliveryDate,
             @RequestParam("deliveredBy") Long deliveredBy,
+            @RequestParam("deliveryStatus") OrderStatus deliveryStatus,
             @RequestParam(value = "incident", required = false) String incident
+            , RedirectAttributes redirectAttributes
     ) {
-        Order order = orderRepository.findById(orderId).orElseThrow();
+        Order order = orderRepository.findById(orderId).orElse(null);
+
+        if (order == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy đơn hàng để cập nhật.");
+            return "redirect:/staff/dashboard";
+        }
+
+        if (!userRepository.existsById(deliveredBy)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Người giao không tồn tại trong bảng users.");
+            return "redirect:/staff/dashboard?orderId=" + orderId;
+        }
 
         order.setCreatedAt(LocalDateTime.of(deliveryDate, order.getCreatedAt().toLocalTime()));
         order.setCreatedBy(deliveredBy);
+        order.setStatus(deliveryStatus);
         order.setRejectedReason(incident);
 
         orderRepository.save(order);
+        redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật giao hàng vào database.");
 
         return "redirect:/staff/dashboard?orderId=" + orderId;
     }
