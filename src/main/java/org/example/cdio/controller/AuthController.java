@@ -2,16 +2,10 @@ package org.example.cdio.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.cdio.entity.Order;
-import org.example.cdio.entity.OrderStatus;
 import org.example.cdio.dto.StoreRegisterRequest;
-<<<<<<< HEAD
-import org.example.cdio.entity.OrderItem;
-=======
 import org.example.cdio.entity.Order;
 import org.example.cdio.entity.OrderItem;
 import org.example.cdio.entity.OrderStatus;
->>>>>>> 9c22373 (add shipper UI)
 import org.example.cdio.entity.Store;
 import org.example.cdio.repository.OrderItemRepository;
 import org.example.cdio.repository.OrderRepository;
@@ -20,15 +14,12 @@ import org.example.cdio.service.AuthService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -46,14 +37,12 @@ public class AuthController {
 
     @GetMapping("/")
     public String home() {
-<<<<<<< HEAD
-        return "redirect:/staff/dashboard";
+        return "redirect:/login";
     }
 
-     
-    
-=======
-        return "redirect:/store/dashboard";
+    @GetMapping("/login")
+    public String loginPage() {
+        return "auth/login";
     }
 
     @GetMapping("/store/register")
@@ -61,13 +50,13 @@ public class AuthController {
         model.addAttribute("form", new StoreRegisterRequest());
         return "auth/store-register";
     }
+
     @PostMapping("/store/register")
     public String register(
             @Valid @ModelAttribute("form") StoreRegisterRequest form,
             BindingResult binding,
             Model model
     ) {
-
         if (binding.hasErrors()) {
             return "auth/store-register";
         }
@@ -80,7 +69,7 @@ public class AuthController {
             return "auth/store-register";
         }
     }
->>>>>>> 9c22373 (add shipper UI)
+
     @GetMapping("/admin/dashboard")
     public String admin() {
         return "admin/dashboard";
@@ -88,12 +77,12 @@ public class AuthController {
 
     @GetMapping("/staff/dashboard")
     public String staffDashboard(@RequestParam(value = "orderId", required = false) Long orderId, Model model) {
-        return loadShipperDashboard(orderId, model);
+        return loadDashboard(orderId, model, "staff/dashboard");
     }
 
-    @GetMapping("/shipper-dashboard")
+    @GetMapping({"/shipper-dashboard", "/shipper/dashboard"})
     public String shipperDashboard(@RequestParam(value = "orderId", required = false) Long orderId, Model model) {
-        return loadShipperDashboard(orderId, model);
+        return loadDashboard(orderId, model, "shipper/shipper-dashboard");
     }
 
     @PostMapping("/staff/delivery/update")
@@ -103,48 +92,50 @@ public class AuthController {
             @RequestParam("deliveredBy") Long deliveredBy,
             @RequestParam("deliveryStatus") OrderStatus deliveryStatus,
             @RequestParam(value = "incident", required = false) String incident,
+            @RequestHeader(value = "Referer", required = false) String referer,
             RedirectAttributes redirectAttributes
     ) {
-        Order order = orderRepository.findById(orderId).orElse(null);
+        String redirectBase = (referer != null && referer.contains("/shipper"))
+                ? "/shipper-dashboard"
+                : "/staff/dashboard";
 
+        Order order = orderRepository.findById(orderId).orElse(null);
         if (order == null) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy đơn hàng để cập nhật.");
-            return "redirect:/shipper-dashboard";
+            redirectAttributes.addFlashAttribute("errorMessage", "Khong tim thay don hang de cap nhat.");
+            return "redirect:" + redirectBase;
         }
 
         if (!userRepository.existsById(deliveredBy)) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Người giao không tồn tại trong bảng users.");
-            return "redirect:/shipper-dashboard?orderId=" + orderId;
+            redirectAttributes.addFlashAttribute("errorMessage", "Nguoi giao khong ton tai trong bang users.");
+            return "redirect:" + redirectBase + "?orderId=" + orderId;
         }
 
         LocalDateTime currentCreatedAt = order.getCreatedAt() != null ? order.getCreatedAt() : LocalDateTime.now();
-
         order.setCreatedAt(LocalDateTime.of(deliveryDate, currentCreatedAt.toLocalTime()));
         order.setCreatedBy(deliveredBy);
         order.setStatus(deliveryStatus);
         order.setRejectedReason(incident);
 
         orderRepository.save(order);
-        redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật giao hàng vào database.");
+        redirectAttributes.addFlashAttribute("successMessage", "Da cap nhat giao hang vao database.");
 
-        return "redirect:/shipper-dashboard?orderId=" + orderId;
+        return "redirect:" + redirectBase + "?orderId=" + orderId;
     }
 
-    private String loadShipperDashboard(Long orderId, Model model) {
+    private String loadDashboard(Long orderId, Model model, String viewName) {
         model.addAttribute("orderStatuses", Arrays.asList(OrderStatus.values()));
 
         List<OrderItem> allItems = orderItemRepository.findAllWithDetails();
         if (allItems.isEmpty()) {
             model.addAttribute("orderItems", Collections.emptyList());
-            return "shipper/shipper-dashboard";
+            return viewName;
         }
 
         Long resolvedOrderId = orderId != null ? orderId : allItems.get(0).getOrder().getId();
         List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithDetails(resolvedOrderId);
-
         if (orderItems.isEmpty()) {
             model.addAttribute("orderItems", Collections.emptyList());
-            return "shipper/shipper-dashboard";
+            return viewName;
         }
 
         OrderItem firstItem = orderItems.get(0);
@@ -153,15 +144,12 @@ public class AuthController {
 
         model.addAttribute("orderItems", orderItems);
         model.addAttribute("orderId", order.getId());
-
         model.addAttribute("deliverySlipCode", order.getId());
         model.addAttribute("orderCode", firstItem.getProduct() != null ? firstItem.getProduct().getId() : null);
-
         model.addAttribute("createdDate", order.getCreatedAt());
         model.addAttribute("deliveryStatus", order.getStatus());
         model.addAttribute("shipperId", order.getCreatedBy());
         model.addAttribute("incident", order.getRejectedReason());
-
         model.addAttribute("orderTotal", order.getTotalAmount());
 
         if (store != null) {
@@ -175,90 +163,6 @@ public class AuthController {
                     .ifPresent(user -> model.addAttribute("shipperName", user.getFullName()));
         }
 
-        return "shipper/shipper-dashboard";
-    }
-//    @GetMapping("/store/dashboard")
-//    public String store() {
-//        return "store/dashboard";
-//    }
-
-    @GetMapping("/staff/dashboard")
-    public String staff(@RequestParam(value = "orderId", required = false) Long orderId, Model model) {
-        model.addAttribute("orderStatuses", Arrays.asList(OrderStatus.values()));
-
-        List<OrderItem> allItems = orderItemRepository.findAllWithDetails();
-
-        if (allItems.isEmpty()) {
-            model.addAttribute("orderItems", Collections.emptyList());
-            return "staff/dashboard";
-        }
-
-        Long resolvedOrderId = orderId != null ? orderId : allItems.get(0).getOrder().getId();
-        List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithDetails(resolvedOrderId);
-
-        if (orderItems.isEmpty()) {
-            model.addAttribute("orderItems", Collections.emptyList());
-            return "staff/dashboard";
-        }
-
-        OrderItem firstItem = orderItems.get(0);
-        Store store = firstItem.getOrder().getStore();
-
-        model.addAttribute("orderItems", orderItems);
-        model.addAttribute("orderId", firstItem.getOrder().getId());
-
-        model.addAttribute("deliverySlipCode", firstItem.getOrder().getId());
-        model.addAttribute("orderCode", firstItem.getProduct().getId());
-
-        model.addAttribute("createdDate", firstItem.getOrder().getCreatedAt());
-        model.addAttribute("deliveryStatus", firstItem.getOrder().getStatus());
-        model.addAttribute("orderTotal", firstItem.getOrder().getTotalAmount());
-        model.addAttribute("shipperId", firstItem.getOrder().getCreatedBy());
-        model.addAttribute("incident", firstItem.getOrder().getRejectedReason());
-
-        if (store != null) {
-            model.addAttribute("customerName", store.getRepresentativeName() != null ? store.getRepresentativeName() : store.getName());
-            model.addAttribute("customerPhone", store.getPhone());
-            model.addAttribute("deliveryAddress", store.getAddress());
-        }
-
-        if (firstItem.getOrder().getCreatedBy() != null) {
-            userRepository.findById(firstItem.getOrder().getCreatedBy())
-                    .ifPresent(user -> model.addAttribute("shipperName", user.getFullName()));
-        }
-
-        return "staff/dashboard";
-    }
-
-    @PostMapping("/staff/delivery/update")
-    public String updateDelivery(
-            @RequestParam("orderId") Long orderId,
-            @RequestParam("deliveryDate") LocalDate deliveryDate,
-            @RequestParam("deliveredBy") Long deliveredBy,
-            @RequestParam("deliveryStatus") OrderStatus deliveryStatus,
-            @RequestParam(value = "incident", required = false) String incident
-            , RedirectAttributes redirectAttributes
-    ) {
-        Order order = orderRepository.findById(orderId).orElse(null);
-
-        if (order == null) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy đơn hàng để cập nhật.");
-            return "redirect:/staff/dashboard";
-        }
-
-        if (!userRepository.existsById(deliveredBy)) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Người giao không tồn tại trong bảng users.");
-            return "redirect:/staff/dashboard?orderId=" + orderId;
-        }
-
-        order.setCreatedAt(LocalDateTime.of(deliveryDate, order.getCreatedAt().toLocalTime()));
-        order.setCreatedBy(deliveredBy);
-        order.setStatus(deliveryStatus);
-        order.setRejectedReason(incident);
-
-        orderRepository.save(order);
-        redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật giao hàng vào database.");
-
-        return "redirect:/staff/dashboard?orderId=" + orderId;
+        return viewName;
     }
 }

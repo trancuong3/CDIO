@@ -10,11 +10,7 @@ description = 'CDIO'
 
 java {
     toolchain {
-<<<<<<< HEAD
-        languageVersion = JavaLanguageVersion.of(21)
-=======
         languageVersion = JavaLanguageVersion.of(22)
->>>>>>> 9c22373 (add shipper UI)
     }
 }
 
