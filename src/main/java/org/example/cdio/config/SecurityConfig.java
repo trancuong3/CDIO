@@ -4,12 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.example.cdio.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.http.SessionCreationPolicy;
 
 @Configuration
 @EnableWebSecurity
@@ -22,10 +23,15 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
+
                 .csrf(csrf -> csrf.disable())
 
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                )
+
                 .authorizeHttpRequests(auth -> auth
-                        // trang public
+
                         .requestMatchers(
                                 "/login",
                                 "/store/register",
@@ -33,8 +39,12 @@ public class SecurityConfig {
                                 "/order-approved",
                                 "/api/**",
                                 "/css/**",
-                                "/js/**"
+                                "/js/**",
+                                "/images/**"
                         ).permitAll()
+
+                        // cho phép redirect sau thanh toán
+                        .requestMatchers("/store/dashboard").permitAll()
 
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/store/**").hasRole("STORE")
@@ -54,6 +64,8 @@ public class SecurityConfig {
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
                         .permitAll()
                 )
 
@@ -64,27 +76,25 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationSuccessHandler successHandler() {
+
         return (request, response, authentication) -> {
 
-            String role = authentication.getAuthorities().iterator().next().getAuthority();
+            String role = authentication.getAuthorities()
+                    .iterator()
+                    .next()
+                    .getAuthority();
 
-            switch (role) {
-
-                case "ROLE_ADMIN":
-                    response.sendRedirect("/admin/dashboard");
-                    break;
-
-                case "ROLE_STORE":
-                    response.sendRedirect("/store/dashboard");
-                    break;
-
-                case "ROLE_SHIPPER":
-                    response.sendRedirect("/shipper/dashboard");
-                    break;
-
-                default:
-                    response.sendRedirect("/login");
-                    break;
+            if(role.equals("ROLE_ADMIN")){
+                response.sendRedirect("/admin/dashboard");
+            }
+            else if(role.equals("ROLE_STORE")){
+                response.sendRedirect("/store/dashboard");
+            }
+            else if(role.equals("ROLE_SHIPPER")){
+                response.sendRedirect("/shipper/dashboard");
+            }
+            else{
+                response.sendRedirect("/login");
             }
         };
     }

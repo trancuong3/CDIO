@@ -155,7 +155,6 @@ public class OrderService {
 
             total = total.add(lineTotal);
         }
-
         order.setTotalAmount(total);
 
         return orderRepo.save(order);
