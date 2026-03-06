@@ -173,24 +173,23 @@
 
         $(".btn-add-cart").click(function () {
             let btn = $(this);
-            // Lấy thông tin đã giấu trong thẻ
+            // Lấy thông tin
             let id = btn.data("id");
             let name = btn.data("name");
             let price = btn.data("price");
 
-            // Bắn dữ liệu ngầm lên Java (StoreController)
+            // Đẩy dữ liệu qua StoreController
             $.post("/store/cart/add", { id: id, name: name, price: price }, function (response) {
-                // Đổi màu nút thành xanh lá để báo hiệu mua thành công
                 let originalText = btn.html();
                 btn.removeClass("btn-cart").addClass("btn-success").text("✔ Đã thêm");
 
                 // Cập nhật con số trên giỏ hàng góc phải màn hình
                 $("#cartCountBtn").html(`🛒 Giỏ hàng (${response.totalCount})`);
 
-                // Sau 1.5 giây, trả lại nút màu cam như cũ
+                // Sau 1 giây, trả lại nút màu cam như cũ
                 setTimeout(() => {
                     btn.removeClass("btn-success").addClass("btn-cart").html(originalText);
-                }, 1500);
+                }, 1000);
             });
         });
     });

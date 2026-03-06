@@ -72,7 +72,8 @@ public class StoreController {
 
     @PostMapping("/profile/update")
     public String updateProfile(
-            Principal principal,
+            Principal principal, //Session user hiện tại
+            //Hứng dữ liệu từ các thẻ <input>
             @RequestParam("fullName") String fullName,
             @RequestParam("representativeName") String representativeName,
             @RequestParam("phone") String phone,
@@ -84,17 +85,17 @@ public class StoreController {
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             user.setFullName(fullName);
-            userRepository.save(user);
+            userRepository.save(user); //Lưu vào db
 
             Store store = user.getStore();
             if (store != null) {
                 store.setRepresentativeName(representativeName);
                 store.setPhone(phone);
                 store.setAddress(address);
-                storeRepository.save(store);
+                storeRepository.save(store); //Lưu vào db
             }
         }
-        return "redirect:/store/profile?success";
+        return "redirect:/store/profile?success"; //Quay lại trang và thông báo thành công
     }
 
     @PostMapping("/cart/add")

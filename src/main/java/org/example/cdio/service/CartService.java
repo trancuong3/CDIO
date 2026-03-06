@@ -9,18 +9,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
-@SessionScope
+@SessionScope //Lưu giỏ hàng lên RAM theo từng session
 public class CartService {
+    //Dùng Map với Key là ID sản phầm và Value là chi tiết sản phẩm
     private Map<Long, CartItem> cart = new HashMap<>();
 
-    // 1. Hàm ném sản phẩm vào giỏ
     public void addProduct(Long productId, String name, double price) {
         if (cart.containsKey(productId)) {
-            // Đã có trong giỏ -> Tăng số lượng lên 1
+            // Nếu sản phầm có trong giỏ thì tăng 1
             CartItem item = cart.get(productId);
             item.setQuantity(item.getQuantity() + 1);
         } else {
-            // Chưa có -> Thêm mới với số lượng là 1
+            // Nếu chưa có sản phầm thì thêm vào Map với số lượng là 1
             cart.put(productId, new CartItem(productId, name, price, 1));
         }
     }

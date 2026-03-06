@@ -17,7 +17,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional //Hoàn tác khi có lỗi
 public class OrderService {
     private final InventoryRepository inventoryRepository;
     private final UserRepository userRepository;
@@ -30,6 +30,7 @@ public class OrderService {
 
     public Order create(Store store, Map<Product, Integer> items) {
 
+        // Tạo mới đơn hàng
         Order order = new Order();
         order.setStore(store);
         order.setStatus(OrderStatus.PENDING);
@@ -44,6 +45,7 @@ public class OrderService {
             BigDecimal price = p.getWholesalePrice();
             BigDecimal lineTotal = price.multiply(BigDecimal.valueOf(qty));
 
+            // Lưu chi tiết đơn hàng trong giỏ
             OrderItem oi = new OrderItem();
             oi.setOrder(order);
             oi.setProduct(p);
@@ -58,7 +60,7 @@ public class OrderService {
 
         order.setTotalAmount(total);
 
-        return orderRepo.save(order);
+        return orderRepo.save(order); //Lưu vào db
     }
 
     // ADMIN DUYỆT
