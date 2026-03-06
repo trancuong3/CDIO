@@ -2,11 +2,14 @@ package org.example.cdio.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Email;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter @Setter
+@Getter
+@Setter
 public class StoreRegisterRequest {
+
     @NotBlank
     private String storeName;
 
@@ -21,6 +24,10 @@ public class StoreRegisterRequest {
     @NotBlank
     @Size(min = 4, max = 50)
     private String username;
+
+    @NotBlank
+    @Email
+    private String email;
 
     @NotBlank
     @Size(min = 6, max = 100)
