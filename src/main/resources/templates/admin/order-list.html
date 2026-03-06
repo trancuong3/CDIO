@@ -32,7 +32,7 @@
 
                 <tbody>
 
-                <tr th:each="o:${orders}">
+                <tr th:each="o : ${orders}">
 
                     <td th:text="${o.id}"></td>
 
@@ -57,7 +57,6 @@
                         <div class="d-flex gap-2">
 
                             <!-- xác nhận thanh toán -->
-
                             <form th:action="@{/admin/orders/confirm-payment/{orderId}(orderId=${o.id})}"
                                   method="post">
 
@@ -69,7 +68,6 @@
                             </form>
 
                             <!-- duyệt đơn -->
-
                             <form th:action="@{/admin/orders/approve/{id}(id=${o.id})}"
                                   method="post">
 
