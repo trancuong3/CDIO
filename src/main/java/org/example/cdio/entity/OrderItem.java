@@ -16,6 +16,9 @@ public class OrderItem {
     @JoinColumn(name = "order_id")
     private Order order;
 
+    @Column(name = "ma_don_hang")
+    private Long maDonHang;
+
     @ManyToOne
     @JoinColumn(name = "product_id")
     private Product product;
@@ -51,6 +54,14 @@ public class OrderItem {
 
     public void setProduct(Product product) {
         this.product = product;
+    }
+
+    public Long getMaDonHang() {
+        return maDonHang;
+    }
+
+    public void setMaDonHang(Long maDonHang) {
+        this.maDonHang = maDonHang;
     }
 
     public Integer getQuantity() {

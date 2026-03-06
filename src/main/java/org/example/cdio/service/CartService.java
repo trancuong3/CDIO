@@ -55,4 +55,7 @@ public class CartService {
     public void removeProduct(Long productId) {
         cart.remove(productId);
     }
+    public void clear(){
+        cart.clear();
+    }
 }

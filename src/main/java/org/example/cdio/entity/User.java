@@ -8,8 +8,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
-@Getter @Setter
+@Getter
+@Setter
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,6 +33,10 @@ public class User {
     @Column(name = "full_name")
     private String fullName;
 
+    // thêm email
+    @Column(nullable = false, unique = true, length = 100)
+    private String email;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Status status = Status.ACTIVE;
@@ -41,5 +47,8 @@ public class User {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    public enum Status { ACTIVE, LOCKED }
+    public enum Status {
+        ACTIVE,
+        LOCKED
+    }
 }

@@ -3,187 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nhân viên giao hàng</title>
+    <title>Shipper - Don Hang</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background: #f4f6f9;
-        }
-
-        .topbar {
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, .06);
-            padding: 16px 20px;
-            margin-bottom: 24px;
-        }
-
-        .section-card {
-            border: none;
-            border-radius: 14px;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, .06);
-        }
-
-        .section-title {
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 14px;
-        }
-
-        .label-muted {
-            color: #6b7280;
-            font-size: .92rem;
-            margin-bottom: 4px;
-        }
-
-        .value-text {
-            font-weight: 600;
-            color: #111827;
-            margin-bottom: 0;
-        }
-    </style>
 </head>
-<body>
+<body class="bg-light">
 
-<div class="container py-4 py-lg-5">
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="m-0">Shipper Dashboard</h4>
+        <div class="text-muted" th:text="${shipperName != null ? shipperName : 'Shipper'}">Shipper</div>
+    </div>
 
     <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}"></div>
     <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
 
-    <div class="topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h4 class="m-0">🚚 Nhân viên giao hàng</h4>
-        <div>
-            <span class="text-muted">Xin chào, </span>
-            <strong th:text="${shipperName != null ? shipperName : 'Nhân viên giao'}">Nhân viên giao</strong>
+    <div class="card shadow-sm">
+        <div class="card-body p-3 p-md-4">
+            <h5 class="mb-3">Tat ca don hang tu bang don_hangs</h5>
+
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Ma don</th>
+                        <th>Ngay dat</th>
+                        <th>So dien thoai</th>
+                        <th>Trang thai</th>
+                        <th class="text-end">Tong tien</th>
+                        <th class="text-center">Hanh dong</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${#lists.isEmpty(legacyOrders)}">
+                        <td colspan="6" class="text-center text-muted">Khong lay duoc du lieu don_hangs. Kiem tra lai ten cot trong DB.</td>
+                    </tr>
+
+                    <tr th:each="l : ${legacyOrders}">
+                        <td th:text="${l.maDonHang}">0</td>
+                        <td th:text="${l.ngayDat != null ? #temporals.format(l.ngayDat, 'dd/MM/yyyy HH:mm') : '--'}">--</td>
+                        <td th:text="${l.sdt != null ? l.sdt : '--'}">--</td>
+                        <td>
+                            <span class="badge text-bg-secondary" th:text="${l.trangThai != null ? l.trangThai : '--'}">--</span>
+                        </td>
+                        <td class="text-end" th:text="${l.tongTien != null ? #numbers.formatDecimal(l.tongTien, 0, 'COMMA', 0, 'POINT') + ' đ' : '--'}">--</td>
+                        <td class="text-center">
+                            <form th:if="${l.trangThai == null or (l.trangThai != 'DELIVERING' and l.trangThai != 'DELIVERED')}"
+                                  th:action="@{/shipper/legacy/{id}/accept(id=${l.maDonHang})}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-primary">Nhan giao</button>
+                            </form>
+
+                            <form th:if="${l.trangThai == 'DELIVERING'}"
+                                  th:action="@{/shipper/legacy/{id}/confirm(id=${l.maDonHang})}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-success">Da giao xong</button>
+                            </form>
+
+                            <span th:if="${l.trangThai == 'DELIVERED'}" class="text-success small">Hoan tat</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <div class="row g-4">
+    <div class="card shadow-sm mt-3">
+        <div class="card-body p-3 p-md-4">
+            <h5 class="mb-3">Cap nhat thong tin giao hang (bang deliveries)</h5>
 
-        <div class="col-12">
-            <div class="card section-card">
-                <div class="card-body p-4">
-                    <h5 class="section-title">🧾 Phiếu giao</h5>
-                    <div class="row g-4">
-                        <div class="col-md-3">
-                            <p class="label-muted">Mã phiếu</p>
-                            <p class="value-text" th:text="${deliverySlipCode != null ? deliverySlipCode : '--'}">--</p>
-                        </div>
-                        <div class="col-md-3">
-                            <p class="label-muted">Mã đơn hàng</p>
-                            <p class="value-text" th:text="${orderCode != null ? orderCode : '--'}">--</p>
-                        </div>
-                        <div class="col-md-3">
-                            <p class="label-muted">Ngày tạo phiếu</p>
-                            <p class="value-text" th:text="${createdDate != null ? #temporals.format(createdDate, 'dd/MM/yyyy HH:mm') : '--'}">--</p>
-                        </div>
-                        <div class="col-md-3">
-                            <p class="label-muted">Trạng thái giao</p>
-                            <span class="badge text-bg-warning" th:text="${deliveryStatus != null ? deliveryStatus : 'Đang giao'}">Đang giao</span>
-                        </div>
-                    </div>
-                </div>
+            <div th:if="${selectedDelivery == null}" class="text-muted">
+                Chua co phieu giao nao. Bam "Nhan giao" de tao phieu, sau do cap nhat trang thai/ly do.
             </div>
-        </div>
 
-        <div class="col-12 col-lg-7">
-            <div class="card section-card h-100">
-                <div class="card-body p-4">
-                    <h5 class="section-title">📦 Chi tiết đơn</h5>
+            <form th:if="${selectedDelivery != null}"
+                  th:action="@{/shipper/deliveries/{id}/update(id=${selectedDelivery.id})}"
+                  method="post" class="row g-3">
 
-                    <div class="row g-3 mb-3">
-                        <div class="col-sm-6">
-                            <p class="label-muted">Khách hàng</p>
-                            <p class="value-text" th:text="${customerName != null ? customerName : '--'}">--</p>
-                        </div>
-                        <div class="col-sm-6">
-                            <p class="label-muted">Số điện thoại</p>
-                            <p class="value-text" th:text="${customerPhone != null ? customerPhone : '--'}">--</p>
-                        </div>
-                        <div class="col-12">
-                            <p class="label-muted">Địa chỉ nhận hàng</p>
-                            <p class="value-text" th:text="${deliveryAddress != null ? deliveryAddress : '--'}">--</p>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="table table-bordered align-middle mb-0">
-                            <thead class="table-light">
-                            <tr>
-                                <th>Sản phẩm</th>
-                                <th class="text-center">SL</th>
-                                <th class="text-end">Đơn giá</th>
-                                <th class="text-end">Thành tiền</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr th:if="${#lists.isEmpty(orderItems)}">
-                                <td colspan="4" class="text-center text-muted">Chưa có dữ liệu order_items</td>
-                            </tr>
-                            <tr th:each="item : ${orderItems}">
-                                <td th:text="${item.product != null ? item.product.name + ' (ID: ' + item.product.id + ')' : '--'}">--</td>
-                                <td class="text-center" th:text="${item.quantity}">0</td>
-                                <td class="text-end" th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 0, 'POINT') + ' đ'}">0 đ</td>
-                                <td class="text-end" th:text="${#numbers.formatDecimal(item.lineTotal, 0, 'COMMA', 0, 'POINT') + ' đ'}">0 đ</td>
-                            </tr>
-                            </tbody>
-                            <tfoot>
-                            <tr>
-                                <th colspan="3" class="text-end">Tổng cộng</th>
-                                <th class="text-end" th:text="${orderTotal != null ? #numbers.formatDecimal(orderTotal, 0, 'COMMA', 0, 'POINT') + ' đ' : '0 đ'}">0 đ</th>
-                            </tr>
-                            </tfoot>
-                        </table>
-                    </div>
+                <div class="col-md-3">
+                    <label class="form-label">Delivery ID</label>
+                    <input id="legacyDeliveryIdDisplay" class="form-control" th:value="${selectedLegacyId != null ? selectedLegacyId : '--'}" readonly>
                 </div>
-            </div>
-        </div>
 
-        <div class="col-12 col-lg-5">
-            <div class="card section-card h-100">
-                <div class="card-body p-4">
-                    <h5 class="section-title">✅ Cập nhật giao hàng</h5>
-
-                    <form th:action="@{/staff/delivery/update}" method="post" class="row g-3">
-                        <input type="hidden" name="orderId" th:value="${orderId}">
-
-                        <div class="col-12">
-                            <label for="deliveryDate" class="form-label">Ngày giao</label>
-                            <input type="date" class="form-control" id="deliveryDate" name="deliveryDate" th:value="${createdDate != null ? #temporals.format(createdDate, 'yyyy-MM-dd') : ''}" required>
-                        </div>
-
-                        <div class="col-12">
-                            <label for="deliveredBy" class="form-label">Người giao</label>
-                            <input type="number" min="1" class="form-control" id="deliveredBy" name="deliveredBy" th:value="${shipperId}" placeholder="Nhập ID người giao" required>
-                        </div>
-
-                        <div class="col-12">
-                            <label for="deliveryStatus" class="form-label">Trạng thái giao</label>
-                            <select class="form-select" id="deliveryStatus" name="deliveryStatus" required>
-                                <option th:each="status : ${orderStatuses}"
-                                        th:value="${status}"
-                                        th:text="${status}"
-                                        th:selected="${deliveryStatus == status}">
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="col-12">
-                            <label for="incident" class="form-label">Sự cố</label>
-                            <textarea class="form-control" id="incident" name="incident" rows="4" placeholder="Mô tả sự cố nếu có (không bắt buộc)" th:text="${incident}"></textarea>
-                        </div>
-
-                        <div class="col-12 d-grid">
-                            <button type="submit" class="btn btn-primary">Lưu cập nhật giao hàng</button>
-                        </div>
-                    </form>
+                <div class="col-md-3">
+                    <label class="form-label">Ma don hang</label>
+                    <select class="form-select" name="maDonHang" required>
+                        <option th:if="${#lists.isEmpty(orderCodeOptions)}" value="" selected disabled>Chua co ma don hang hop le</option>
+                        <option th:if="${selectedDelivery.maDonHang != null and !#lists.contains(orderCodeOptions, selectedDelivery.maDonHang)}"
+                                th:value="${selectedDelivery.maDonHang}"
+                                th:text="${selectedDelivery.maDonHang}"
+                            th:attr="data-legacy-id=${legacyIdByCode[selectedDelivery.maDonHang]}"
+                                selected>
+                        </option>
+                        <option th:each="code : ${orderCodeOptions}"
+                                th:value="${code}"
+                                th:text="${code}"
+                            th:attr="data-legacy-id=${legacyIdByCode[code]}"
+                                th:selected="${selectedDelivery.maDonHang == code}">
+                        </option>
+                    </select>
                 </div>
-            </div>
-        </div>
 
+                <div class="col-md-3">
+                    <label class="form-label">Trang thai</label>
+                    <select class="form-select" name="trangThai" required>
+                        <option th:each="st : ${deliveryStatusOptions}"
+                                th:value="${st}"
+                                th:text="${st}"
+                                th:selected="${selectedDelivery.trangThai == st}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Ngay giao</label>
+                    <input type="date" class="form-control" name="ngayDat"
+                           th:value="${selectedDelivery.ngayDat != null ? selectedDelivery.ngayDat : #temporals.createNow().toLocalDate()}" required>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">So dien thoai</label>
+                    <input class="form-control" name="sdt" th:value="${selectedDelivery.sdt}">
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Ly do tu choi / ghi chu</label>
+                    <textarea class="form-control" name="incident" rows="3" th:text="${selectedDelivery.incident}"></textarea>
+                </div>
+
+                <div class="col-12 d-flex gap-2">
+                    <button class="btn btn-primary" type="submit">Luu thong tin deliveries</button>
+                    <a class="btn btn-outline-secondary" th:href="@{/shipper/dashboard}">Lam moi</a>
+                </div>
+            </form>
+        </div>
     </div>
-
 </div>
+
+<script>
+    (function () {
+        const orderSelect = document.querySelector('select[name="maDonHang"]');
+        const displayInput = document.getElementById('legacyDeliveryIdDisplay');
+
+        if (!orderSelect || !displayInput) {
+            return;
+        }
+
+        const updateDisplay = () => {
+            const selectedOption = orderSelect.options[orderSelect.selectedIndex];
+            const legacyId = selectedOption ? selectedOption.getAttribute('data-legacy-id') : null;
+            displayInput.value = legacyId && legacyId.trim() !== '' ? legacyId : '--';
+        };
+
+        orderSelect.addEventListener('change', updateDisplay);
+        updateDisplay();
+    })();
+</script>
 
 </body>
 </html>

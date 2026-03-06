@@ -20,14 +20,17 @@ public class Order {
     private Store store;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "trang_thai", nullable = false)
     private OrderStatus status;
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
-    @Column(nullable = false)
+    @Column(name = "ngay_dat", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "sdt")
+    private String sdt;
 
     @Column(name = "created_by")
     private Long createdBy;
@@ -88,6 +91,14 @@ public class Order {
 
     public void setCreatedBy(Long createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public String getSdt() {
+        return sdt;
+    }
+
+    public void setSdt(String sdt) {
+        this.sdt = sdt;
     }
 
     public String getRejectedReason() {
