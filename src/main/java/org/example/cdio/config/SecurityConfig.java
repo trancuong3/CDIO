@@ -37,7 +37,7 @@ public class SecurityConfig {
                                 "/store/register",
                                 "/payment/**",
                                 "/order-approved",
-                                "/api/**",
+                                "/store/order/api/**",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**"

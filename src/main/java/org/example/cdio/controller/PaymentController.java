@@ -30,7 +30,6 @@ public class PaymentController {
 
         model.addAttribute("order",order);
         model.addAttribute("qrUrl",qrUrl);
-        cartService.clear();
 
         return "payment/qr";
     }

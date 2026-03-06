@@ -178,7 +178,7 @@ public class StoreController {
         boolean enoughStock = orderService.checkInventory(order);
 
         if(enoughStock){
-
+            cartService.clear();
             return "redirect:/payment/momo/" + order.getId();
 
         }else{
