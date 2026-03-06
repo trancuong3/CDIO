@@ -19,14 +19,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Transactional
 public class OrderService {
+
     private final InventoryRepository inventoryRepository;
     private final UserRepository userRepository;
-
     private final ProductRepository productRepository;
-
     private final CartService cartService;
     private final OrderRepository orderRepo;
     private final InventoryService inventoryService;
+    private final EmailService emailService;
 
     public Order create(Store store, Map<Product, Integer> items) {
 
@@ -58,7 +58,26 @@ public class OrderService {
 
         order.setTotalAmount(total);
 
-        return orderRepo.save(order);
+        Order savedOrder = orderRepo.save(order);
+
+        String subject = "Đơn hàng mới từ hệ thống Khô Gà";
+
+        String content = "Xin chào,\n\n"
+                + "Một đơn hàng mới vừa được tạo.\n"
+                + "Mã đơn hàng: #" + savedOrder.getId() + "\n"
+                + "Tổng tiền: " + savedOrder.getTotalAmount() + " VNĐ\n"
+                + "Trạng thái: " + savedOrder.getStatus() + "\n\n"
+                + "Vui lòng đăng nhập hệ thống để kiểm tra chi tiết.\n\n"
+                + "Trân trọng,\n"
+                + "Hệ thống quản lý Khô Gà Độ Chó.";
+
+        emailService.sendEmail(
+                "testgpttrial22@gmail.com",
+                subject,
+                content
+        );
+
+        return savedOrder;
     }
 
     // ADMIN DUYỆT
@@ -77,7 +96,6 @@ public class OrderService {
                     .findByProductId(i.getProduct().getId())
                     .orElseGet(() -> {
 
-                        // tạo inventory mới nếu chưa có
                         Inventory newInv = Inventory.builder()
                                 .product(i.getProduct())
                                 .quantity(0)
@@ -89,19 +107,33 @@ public class OrderService {
 
             int thiếu = i.getQuantity() - inv.getQuantity();
 
-            // nếu thiếu kho -> nhập thêm
             if (thiếu > 0) {
                 inventoryService.stockIn(i.getProduct().getId(), thiếu);
             }
 
-            // xuất kho
             inventoryService.stockOut(i.getProduct().getId(), i.getQuantity());
         }
 
         o.setStatus(OrderStatus.APPROVED);
-
         orderRepo.save(o);
+
+        String subject = "Đơn hàng đã được duyệt";
+
+        String content = "Xin chào,\n\n"
+                + "Đơn hàng #" + o.getId() + " của bạn đã được duyệt thành công.\n"
+                + "Tổng tiền: " + o.getTotalAmount() + " VNĐ\n"
+                + "Trạng thái: " + o.getStatus() + "\n\n"
+                + "Vui lòng chuẩn bị nhận hàng.\n\n"
+                + "Trân trọng,\n"
+                + "Hệ thống Khô Gà.";
+
+        emailService.sendEmail(
+                "testgpttrial22@gmail.com",
+                subject,
+                content
+        );
     }
+
     public boolean checkInventory(Order order){
 
         for(OrderItem item : order.getItems()){
@@ -117,6 +149,7 @@ public class OrderService {
 
         return true;
     }
+
     public Order createOrderFromCart(Principal principal) {
 
         String username = principal.getName();
@@ -127,7 +160,7 @@ public class OrderService {
 
         Order order = new Order();
         order.setStore(store);
-        order.setCreatedBy(user);   // ⭐ thêm dòng này
+        order.setCreatedBy(user);
         order.setCreatedAt(LocalDateTime.now());
         order.setStatus(OrderStatus.PENDING);
 
@@ -159,5 +192,24 @@ public class OrderService {
         order.setTotalAmount(total);
 
         return orderRepo.save(order);
+    }
+
+    public void createOrder() {
+
+        System.out.println("Order created!");
+
+        String subject = "Đơn hàng mới từ hệ thống Khô Gà";
+
+        String content = "Xin chào,\n\n"
+                + "Một đơn hàng mới vừa được tạo trong hệ thống.\n"
+                + "Vui lòng đăng nhập vào hệ thống để kiểm tra chi tiết.\n\n"
+                + "Trân trọng,\n"
+                + "Hệ thống quản lý Khô Gà.";
+
+        emailService.sendEmail(
+                "testgpttrial22@gmail.com",
+                subject,
+                content
+        );
     }
 }

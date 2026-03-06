@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final org.example.cdio.service.EmailService emailService;
 
     @GetMapping("/login")
     public String login() {
@@ -36,6 +37,30 @@ public class AuthController {
 
         try {
             authService.registerStore(form);
+
+            // gửi email
+//            emailService.sendEmail(
+//                    form.getEmail(),
+//                    "Đăng ký thành công",
+//                    "Chào " + form.getFullName() +
+//                            ", tài khoản của bạn đã được tạo."
+//            );
+
+            String subject = "Đăng ký tài khoản thành công";
+
+            String content = "Xin chào " + form.getFullName() + ",\n\n"
+                    + "Tài khoản của bạn đã được đăng ký thành công trên hệ thống.\n"
+                    + "Username: " + form.getUsername() + "\n\n"
+                    + "Bạn có thể đăng nhập để bắt đầu sử dụng hệ thống.\n\n"
+                    + "Trân trọng,\n"
+                    + "Hệ thống quản lý Khô Gà.";
+
+            emailService.sendEmail(
+                    form.getEmail(),
+                    subject,
+                    content
+            );
+
             return "redirect:/login?registered";
         } catch (Exception e) {
             model.addAttribute("error", e.getMessage());
@@ -51,3 +76,6 @@ public class AuthController {
 //        return "store/dashboard";
 //    }
 }
+
+// gửi email khi đăng ký
+
