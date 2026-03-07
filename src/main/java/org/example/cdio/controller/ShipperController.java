@@ -14,6 +14,7 @@ import org.example.cdio.repository.OrderItemRepository;
 import org.example.cdio.repository.OrderRepository;
 import org.example.cdio.repository.UserRepository;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,6 +36,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -261,35 +263,28 @@ public class ShipperController {
         DonHangLegacyProjection legacyOrder = donHangLegacyRepository.findLegacyOrderById(maDonHang)
                 .orElseThrow(() -> new IllegalArgumentException("Khong tim thay don hang legacy."));
 
-        if ("DELIVERING".equalsIgnoreCase(legacyOrder.getTrangThai())
-                || "DELIVERED".equalsIgnoreCase(legacyOrder.getTrangThai())) {
+        String appLegacyStatus = toAppStatus(legacyOrder.getTrangThai());
+        if ("DELIVERING".equalsIgnoreCase(appLegacyStatus)
+                || "DELIVERED".equalsIgnoreCase(appLegacyStatus)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Don hang nay da duoc shipper khac xu ly.");
             return "redirect:/shipper/dashboard";
         }
 
-        int updated = donHangLegacyRepository.updateLegacyStatus(maDonHang, "DELIVERING");
+        int updated = donHangLegacyRepository.updateLegacyStatus(maDonHang, toLegacyStatus("DELIVERING"));
         if (updated == 0) {
             redirectAttributes.addFlashAttribute("errorMessage", "Khong cap nhat duoc trang thai don legacy.");
             return "redirect:/shipper/dashboard";
         }
 
-        Delivery delivery = new Delivery();
-        delivery.setMaDonHang(maDonHang);
-        delivery.setOrderId(resolveOrderIdForLegacyInsert(maDonHang));
-        delivery.setNgayDat(LocalDate.now());
-        delivery.setTrangThai("DELIVERING");
-        delivery.setSdt(legacyOrder.getSdt());
-        delivery.setUnitPrice(legacyOrder.getTongTien());
-        delivery.setLineTotal(legacyOrder.getTongTien());
-        delivery.setDelivererName(shipper.getFullName() != null ? shipper.getFullName() : shipper.getUsername());
-        delivery.setShippedAt(LocalDateTime.now());
-        delivery.setStatus("DELIVERING");
-        delivery.setDeliveredBy(shipper.getId());
-        delivery.setCreatedAt(LocalDateTime.now());
-        deliveryRepository.save(delivery);
+        Long savedDeliveryId = upsertLegacyDeliveryRecord(maDonHang, shipper, legacyOrder, "DELIVERING");
+        if (savedDeliveryId != null) {
+            redirectAttributes.addFlashAttribute("successMessage", "Da nhan giao don legacy #" + maDonHang + ".");
+            return "redirect:/shipper/dashboard?deliveryId=" + savedDeliveryId;
+        }
 
         redirectAttributes.addFlashAttribute("successMessage", "Da nhan giao don legacy #" + maDonHang + ".");
-        return "redirect:/shipper/dashboard?deliveryId=" + delivery.getId();
+        redirectAttributes.addFlashAttribute("errorMessage", "Don da duoc nhan giao, nhung khong ghi duoc bang deliveries (thieu order_id hop le).");
+        return "redirect:/shipper/dashboard";
     }
 
     // Chuc nang: Xac nhan giao thanh cong cho don legacy da duoc shipper nhan truoc do.
@@ -301,38 +296,25 @@ public class ShipperController {
             RedirectAttributes redirectAttributes
     ) {
         User shipper = resolveCurrentUser(principal);
+        DonHangLegacyProjection legacyOrder = donHangLegacyRepository.findLegacyOrderById(maDonHang)
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay don hang legacy."));
 
-        Delivery assignedDelivery = deliveryRepository
-                .findFirstByMaDonHangAndDeliveredByOrderByCreatedAtDesc(maDonHang, shipper.getId())
-                .orElse(null);
-
-        if (assignedDelivery == null) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Ban chua nhan don legacy nay.");
+        String appLegacyStatus = toAppStatus(legacyOrder.getTrangThai());
+        if (!"DELIVERING".equalsIgnoreCase(appLegacyStatus)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Don legacy nay chua o trang thai dang giao.");
             return "redirect:/shipper/dashboard";
         }
 
-        int updated = donHangLegacyRepository.updateLegacyStatus(maDonHang, "DELIVERED");
+        int updated = donHangLegacyRepository.updateLegacyStatus(maDonHang, toLegacyStatus("DELIVERED"));
         if (updated == 0) {
             redirectAttributes.addFlashAttribute("errorMessage", "Khong cap nhat duoc trang thai giao xong.");
             return "redirect:/shipper/dashboard";
         }
 
-        Delivery confirmRow = new Delivery();
-        confirmRow.setMaDonHang(maDonHang);
-        confirmRow.setOrderId(resolveOrderIdForLegacyInsert(maDonHang));
-        confirmRow.setNgayDat(LocalDate.now());
-        confirmRow.setTrangThai("DELIVERED");
-        confirmRow.setSdt(assignedDelivery.getSdt());
-        confirmRow.setUnitPrice(assignedDelivery.getUnitPrice());
-        confirmRow.setLineTotal(assignedDelivery.getLineTotal());
-        confirmRow.setDelivererName(assignedDelivery.getDelivererName());
-        confirmRow.setShippedAt(assignedDelivery.getShippedAt());
-        confirmRow.setDeliveredAt(LocalDateTime.now());
-        confirmRow.setStatus("DELIVERED");
-        confirmRow.setIssueNote(assignedDelivery.getIssueNote());
-        confirmRow.setDeliveredBy(shipper.getId());
-        confirmRow.setCreatedAt(LocalDateTime.now());
-        deliveryRepository.save(confirmRow);
+        Long savedDeliveryId = upsertLegacyDeliveryRecord(maDonHang, shipper, legacyOrder, "DELIVERED");
+        if (savedDeliveryId == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Da cap nhat don_hangs thanh cong, nhung khong ghi duoc bang deliveries (thieu order_id hop le).");
+        }
 
         redirectAttributes.addFlashAttribute("successMessage", "Da xac nhan giao thanh cong don legacy #" + maDonHang + ".");
         return "redirect:/shipper/dashboard";
@@ -369,9 +351,8 @@ public class ShipperController {
         delivery.setIncident(incident);
         delivery.setStatus(trangThai);
         delivery.setIssueNote(incident);
-        if (delivery.getDelivererName() == null || delivery.getDelivererName().isBlank()) {
-            delivery.setDelivererName(shipper.getFullName() != null ? shipper.getFullName() : shipper.getUsername());
-        }
+        delivery.setDelivererName(shipper.getFullName() != null ? shipper.getFullName() : shipper.getUsername());
+        delivery.setDeliveredBy(shipper.getId());
         if ("DELIVERING".equalsIgnoreCase(trangThai) && delivery.getShippedAt() == null) {
             delivery.setShippedAt(LocalDateTime.now());
         }
@@ -382,11 +363,53 @@ public class ShipperController {
         deliveryRepository.save(delivery);
 
         if (maDonHang != null && !maDonHang.isBlank()) {
-            donHangLegacyRepository.updateLegacyStatus(maDonHang, trangThai);
+            donHangLegacyRepository.updateLegacyStatus(maDonHang, toLegacyStatus(trangThai));
         }
 
         redirectAttributes.addFlashAttribute("successMessage", "Da cap nhat thong tin giao hang.");
         return "redirect:/shipper/dashboard?deliveryId=" + deliveryId;
+    }
+
+    // Chuc nang: Cap nhat thong tin giao legacy ngay ca khi chua co ban ghi deliveries truoc do.
+    // Cach hoat dong: Dong bo trang thai len don_hangs truoc, sau do upsert 1 dong deliveries neu tim duoc order_id hop le.
+    @PostMapping("/deliveries/legacy/update")
+    public String updateLegacyDeliveryDirect(
+            @RequestParam("maDonHang") String maDonHang,
+            @RequestParam("trangThai") String trangThai,
+            @RequestParam("ngayDat") LocalDate ngayDat,
+            @RequestParam(value = "sdt", required = false) String sdt,
+            @RequestParam(value = "incident", required = false) String incident,
+            Principal principal,
+            RedirectAttributes redirectAttributes
+    ) {
+        User shipper = resolveCurrentUser(principal);
+        DonHangLegacyProjection legacyOrder = donHangLegacyRepository.findLegacyOrderById(maDonHang)
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay don hang legacy."));
+
+        int updated = donHangLegacyRepository.updateLegacyStatus(maDonHang, toLegacyStatus(trangThai));
+        if (updated == 0) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Khong cap nhat duoc trang thai don legacy.");
+            return "redirect:/shipper/dashboard";
+        }
+
+        Long savedDeliveryId = upsertLegacyDeliveryRecord(
+                maDonHang,
+                shipper,
+                legacyOrder,
+                trangThai,
+                ngayDat,
+                sdt,
+                incident
+        );
+
+        if (savedDeliveryId == null) {
+            redirectAttributes.addFlashAttribute("successMessage", "Da cap nhat don_hangs thanh cong.");
+            redirectAttributes.addFlashAttribute("errorMessage", "Khong ghi duoc bang deliveries vi chua tim thay order_id hop le.");
+            return "redirect:/shipper/dashboard";
+        }
+
+        redirectAttributes.addFlashAttribute("successMessage", "Da cap nhat thong tin giao hang.");
+        return "redirect:/shipper/dashboard?deliveryId=" + savedDeliveryId;
     }
 
     // Chuc nang: Tim don legacy theo ma don theo huong fail-safe.
@@ -433,6 +456,130 @@ public class ShipperController {
                 .map(Delivery::getOrderId)
                 .filter(id -> id != null)
                 .orElseGet(() -> orderRepository.findAll().stream().map(Order::getId).findFirst().orElse(1L));
+    }
+
+    // Chuc nang: Ghi nhat ky giao legacy vao deliveries theo co che best-effort.
+    // Cach hoat dong: Upsert theo (maDonHang, deliveredBy), chi save khi tim duoc order_id hop le de tranh loi FK.
+    private Long upsertLegacyDeliveryRecord(
+            String maDonHang,
+            User shipper,
+            DonHangLegacyProjection legacyOrder,
+            String appStatus
+        ) {
+        return upsertLegacyDeliveryRecord(
+            maDonHang,
+            shipper,
+            legacyOrder,
+            appStatus,
+            LocalDate.now(),
+            legacyOrder != null ? legacyOrder.getSdt() : null,
+            null
+        );
+        }
+
+        // Chuc nang: Ghi/cap nhat chi tiet phieu giao legacy theo du lieu nguoi dung nhap.
+        // Cach hoat dong: Upsert theo (maDonHang, deliveredBy), merge field tu form va auto-dat moc thoi gian theo status.
+        private Long upsertLegacyDeliveryRecord(
+            String maDonHang,
+            User shipper,
+            DonHangLegacyProjection legacyOrder,
+            String appStatus,
+            LocalDate ngayDat,
+            String sdt,
+            String incident
+    ) {
+        Delivery delivery = deliveryRepository
+                .findFirstByMaDonHangAndDeliveredByOrderByCreatedAtDesc(maDonHang, shipper.getId())
+                .orElseGet(Delivery::new);
+
+        Long resolvedOrderId = resolveValidOrderIdForLegacy(maDonHang, delivery.getOrderId());
+        delivery.setMaDonHang(maDonHang);
+        delivery.setOrderId(resolvedOrderId);
+        delivery.setNgayDat(ngayDat != null ? ngayDat : LocalDate.now());
+        delivery.setTrangThai(appStatus);
+        delivery.setStatus(appStatus);
+        if (sdt != null) {
+            delivery.setSdt(sdt);
+        } else if (delivery.getSdt() == null && legacyOrder != null) {
+            delivery.setSdt(legacyOrder.getSdt());
+        }
+        if (legacyOrder != null && legacyOrder.getTongTien() != null) {
+            delivery.setUnitPrice(legacyOrder.getTongTien());
+            delivery.setLineTotal(legacyOrder.getTongTien());
+        }
+        delivery.setIncident(incident);
+        delivery.setIssueNote(incident);
+        delivery.setDelivererName(shipper.getFullName() != null ? shipper.getFullName() : shipper.getUsername());
+        delivery.setDeliveredBy(shipper.getId());
+        if ("DELIVERING".equalsIgnoreCase(appStatus) && delivery.getShippedAt() == null) {
+            delivery.setShippedAt(LocalDateTime.now());
+        }
+        if ("DELIVERED".equalsIgnoreCase(appStatus)) {
+            if (delivery.getShippedAt() == null) {
+                delivery.setShippedAt(LocalDateTime.now());
+            }
+            delivery.setDeliveredAt(LocalDateTime.now());
+        }
+        delivery.setCreatedAt(LocalDateTime.now());
+
+        try {
+            return deliveryRepository.save(delivery).getId();
+        } catch (DataIntegrityViolationException ex) {
+            return null;
+        }
+    }
+
+    // Chuc nang: Tim order_id hop le de gan FK cho deliveries trong luong legacy.
+    // Cach hoat dong: Uu tien id dang co neu ton tai; neu khong thi parse maDonHang thanh so va check orders.existsById.
+    private Long resolveValidOrderIdForLegacy(String maDonHang, Long currentOrderId) {
+        if (currentOrderId != null && orderRepository.existsById(currentOrderId)) {
+            return currentOrderId;
+        }
+
+        if (maDonHang == null || maDonHang.isBlank()) {
+            return null;
+        }
+
+        try {
+            Long parsedOrderId = Long.valueOf(maDonHang.trim());
+            return orderRepository.existsById(parsedOrderId) ? parsedOrderId : null;
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    // Chuc nang: Quy doi trang thai app sang enum legacy trong bang don_hangs.
+    // Cach hoat dong: Chap nhan ca status app (UPPER_SNAKE) va status legacy (lowercase), sau do tra ve gia tri enum hop le cho DB.
+    private String toLegacyStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return "pending";
+        }
+
+        return switch (status.trim().toUpperCase(Locale.ROOT)) {
+            case "PENDING" -> "pending";
+            case "APPROVED", "PREPARING" -> "preparing";
+            case "DELIVERING", "SHIPPING" -> "shipping";
+            case "DELIVERED" -> "delivered";
+            case "CANCELLED", "CANCELED", "REJECTED" -> "cancelled";
+            default -> status.trim().toLowerCase(Locale.ROOT);
+        };
+    }
+
+    // Chuc nang: Quy doi trang thai legacy trong DB ve format app de xu ly logic dieu kien.
+    // Cach hoat dong: Chuan hoa lowercase truoc, sau do map ve enum-name dang app su dung trong code.
+    private String toAppStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return "PENDING";
+        }
+
+        return switch (status.trim().toLowerCase(Locale.ROOT)) {
+            case "pending" -> "PENDING";
+            case "preparing" -> "APPROVED";
+            case "shipping" -> "DELIVERING";
+            case "delivered" -> "DELIVERED";
+            case "cancelled", "canceled" -> "CANCELLED";
+            default -> status.trim().toUpperCase(Locale.ROOT);
+        };
     }
 
     // Chuc nang: Tao map trang thai don legacy theo ma don cho shipper hien tai.
