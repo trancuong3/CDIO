@@ -49,6 +49,8 @@ public class ShipperController {
     private final DeliveryRepository deliveryRepository;
     private final DonHangLegacyRepository donHangLegacyRepository;
 
+    // Chuc nang: Hien thi dashboard shipper voi du lieu don thuong, don legacy, lich su giao va chi tiet don duoc chon.
+    // Cach hoat dong: Lay user hien tai -> truy van cac danh sach can thiet -> resolve ban ghi duoc chon -> gan model va tra ve view.
     @GetMapping("/dashboard")
     public String dashboard(
             @RequestParam(value = "orderId", required = false) Long orderId,
@@ -167,6 +169,8 @@ public class ShipperController {
         return "shipper/dashboard";
     }
 
+    // Chuc nang: Cho phep shipper nhan mot don thuong dang o trang thai APPROVED.
+    // Cach hoat dong: Kiem tra trang thai don -> cap nhat createdBy + status cua Order -> tao cac dong Delivery tu tung OrderItem.
     @PostMapping("/orders/{orderId}/accept")
     public String acceptOrder(
             @PathVariable Long orderId,
@@ -211,6 +215,8 @@ public class ShipperController {
         return "redirect:/shipper/dashboard?orderId=" + orderId;
     }
 
+    // Chuc nang: Cap nhat thong tin giao hang cua don thuong do chinh shipper dang dang nhap phu trach.
+    // Cach hoat dong: Xac thuc quyen tren Order -> cap nhat ngay/trang thai/su co tren Order -> dong bo cac dong Delivery cua don.
     @PostMapping("/delivery/update")
     public String updateDelivery(
             @RequestParam("orderId") Long orderId,
@@ -243,6 +249,8 @@ public class ShipperController {
         return "redirect:/shipper/dashboard?orderId=" + orderId;
     }
 
+    // Chuc nang: Nhan mot don legacy de bat dau giao.
+    // Cach hoat dong: Doc don legacy -> chan truong hop da duoc xu ly -> update trang thai legacy sang DELIVERING -> tao 1 dong Delivery.
     @PostMapping("/legacy/{maDonHang}/accept")
     public String acceptLegacyOrder(
             @PathVariable String maDonHang,
@@ -284,6 +292,8 @@ public class ShipperController {
         return "redirect:/shipper/dashboard?deliveryId=" + delivery.getId();
     }
 
+    // Chuc nang: Xac nhan giao thanh cong cho don legacy da duoc shipper nhan truoc do.
+    // Cach hoat dong: Tim ban ghi assigned cua shipper -> cap nhat trang thai legacy DELIVERED -> chen them 1 dong Delivery xac nhan.
     @PostMapping("/legacy/{maDonHang}/confirm")
     public String confirmLegacyDelivered(
             @PathVariable String maDonHang,
@@ -328,6 +338,8 @@ public class ShipperController {
         return "redirect:/shipper/dashboard";
     }
 
+    // Chuc nang: Sua thong tin chi tiet cua mot phieu giao legacy thuoc shipper hien tai.
+    // Cach hoat dong: Tim Delivery theo deliveryId + deliveredBy -> cap nhat field giao hang -> luu lai va dong bo trang thai sang don legacy.
     @PostMapping("/deliveries/{deliveryId}/update")
     public String updateLegacyDelivery(
             @PathVariable Long deliveryId,
@@ -377,6 +389,8 @@ public class ShipperController {
         return "redirect:/shipper/dashboard?deliveryId=" + deliveryId;
     }
 
+    // Chuc nang: Tim don legacy theo ma don theo huong fail-safe.
+    // Cach hoat dong: Goi repository trong try/catch; neu DataAccessException thi tra ve null de khong vo flow.
     private DonHangLegacyProjection findLegacyOrderSafe(String maDonHang) {
         try {
             return donHangLegacyRepository.findLegacyOrderById(maDonHang).orElse(null);
@@ -385,6 +399,8 @@ public class ShipperController {
         }
     }
 
+    // Chuc nang: Lay danh sach don legacy gan day cho dashboard.
+    // Cach hoat dong: Truy van repository va fallback ve danh sach rong neu co loi truy cap du lieu.
     private List<DonHangLegacyProjection> readLegacyOrdersSafe() {
         try {
             return donHangLegacyRepository.findRecentLegacyOrders();
@@ -393,6 +409,8 @@ public class ShipperController {
         }
     }
 
+    // Chuc nang: Xac dinh phieu giao dang duoc chon de hien thi chi tiet.
+    // Cach hoat dong: Neu deliveryId hop le thi tim theo id, neu khong co thi fallback ve phan tu dau tien trong lich su.
     private Delivery resolveSelectedDelivery(List<Delivery> deliveryHistory, Long deliveryId) {
         if (deliveryHistory == null || deliveryHistory.isEmpty()) {
             return null;
@@ -408,6 +426,8 @@ public class ShipperController {
                 .orElse(deliveryHistory.get(0));
     }
 
+    // Chuc nang: Xac dinh orderId tham chieu khi tao ban ghi Delivery cho don legacy.
+    // Cach hoat dong: Uu tien lay orderId tu dong Delivery moi nhat cung maDonHang, neu khong co thi fallback sang id don bat ky.
     private Long resolveOrderIdForLegacyInsert(String maDonHang) {
         return deliveryRepository.findFirstByMaDonHangOrderByCreatedAtDesc(maDonHang)
                 .map(Delivery::getOrderId)
@@ -415,6 +435,8 @@ public class ShipperController {
                 .orElseGet(() -> orderRepository.findAll().stream().map(Order::getId).findFirst().orElse(1L));
     }
 
+    // Chuc nang: Tao map trang thai don legacy theo ma don cho shipper hien tai.
+    // Cach hoat dong: Duyet cac dong Delivery da sap xep giam dan theo thoi gian va chi lay trang thai dau tien cho moi ma don.
     private Map<String, String> buildLegacyStatusMap(Long shipperId) {
         List<Delivery> legacyRows = deliveryRepository.findByDeliveredByAndMaDonHangIsNotNullOrderByCreatedAtDesc(shipperId);
         Map<String, String> map = new HashMap<>();
@@ -427,6 +449,8 @@ public class ShipperController {
         return map;
     }
 
+    // Chuc nang: Chuyen danh sach Delivery thanh danh sach dong hang de render tren giao dien.
+    // Cach hoat dong: Map tung Delivery sang OrderLineView roi loc bo cac dong khong co du lieu so luong/gia/tong.
     private List<OrderLineView> toOrderLinesFromDeliveries(List<Delivery> deliveries) {
         if (deliveries == null || deliveries.isEmpty()) {
             return Collections.emptyList();
@@ -446,6 +470,8 @@ public class ShipperController {
                 .collect(Collectors.toList());
     }
 
+    // Chuc nang: Xac dinh trang thai don dung de hien thi o dashboard.
+    // Cach hoat dong: Uu tien parse trangThai tu Delivery moi nhat; neu khong parse duoc thi dung status hien co cua Order.
     private OrderStatus resolveStatus(Delivery latestDelivery, Order order) {
         if (latestDelivery != null && latestDelivery.getTrangThai() != null) {
             try {
@@ -457,6 +483,8 @@ public class ShipperController {
         return order.getStatus();
     }
 
+    // Chuc nang: Dinh nghia DTO noi bo cho mot dong hang trong phieu giao.
+    // Cach hoat dong: Record giu cac truong can render (productId, quantity, unitPrice, lineTotal) theo dang immutable.
     private record OrderLineView(
             Long productId,
             Integer quantity,
@@ -465,6 +493,8 @@ public class ShipperController {
     ) {
     }
 
+    // Chuc nang: Resolve tai khoan shipper dang dang nhap tu Principal.
+    // Cach hoat dong: Validate principal/username truoc, sau do truy van theo username; nem loi neu khong tim thay.
     private User resolveCurrentUser(Principal principal) {
         if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
             throw new IllegalArgumentException("Phien dang nhap khong hop le.");
@@ -474,6 +504,8 @@ public class ShipperController {
                 .orElseThrow(() -> new IllegalArgumentException("Khong tim thay tai khoan shipper."));
     }
 
+    // Chuc nang: Chon orderId can hien thi chi tiet o dashboard.
+    // Cach hoat dong: Uu tien orderId tu request; neu khong co thi lay don dang giao dau tien; het don thi tra ve null.
     private Long resolveSelectedOrderId(Long requestedOrderId, List<Order> deliveringOrders) {
         if (requestedOrderId != null) {
             return requestedOrderId;

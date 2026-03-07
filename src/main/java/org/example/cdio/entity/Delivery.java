@@ -53,7 +53,7 @@ public class Delivery {
     private Long productId;
 
     @Column(name = "quantity")
-    private Integer quantity;
+    private Integer quantity;   
 
     @Column(name = "unit_price", precision = 15, scale = 2)
     private BigDecimal unitPrice;
