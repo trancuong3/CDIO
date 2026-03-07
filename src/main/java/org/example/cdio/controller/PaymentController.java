@@ -3,6 +3,7 @@ package org.example.cdio.controller;
 import lombok.RequiredArgsConstructor;
 import org.example.cdio.entity.Order;
 import org.example.cdio.repository.OrderRepository;
+import org.example.cdio.service.CartService;
 import org.example.cdio.service.VietQRService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RequestMapping("/payment")
 public class PaymentController {
+    private final CartService cartService;
 
     private final OrderRepository orderRepository;
     private final VietQRService vietQRService;
