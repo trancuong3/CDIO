@@ -32,11 +32,9 @@ public class Order {
     @ManyToOne
     @JoinColumn(name = "created_by")
     private User createdBy;
+
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
-
-    @Column(name = "created_by")
-    private Long createdBy;
 
     @Column(name = "rejected_reason")
     private String rejectedReason;

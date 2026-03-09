@@ -33,7 +33,12 @@ public class AuthController {
 
     @GetMapping("/")
     public String home() {
-        return "redirect:/store/dashboard";
+        return "redirect:/login";
+    }
+
+    @GetMapping("/login")
+    public String login() {
+        return "auth/login";
     }
 
     @GetMapping("/store/register")
