@@ -2,10 +2,12 @@ package org.example.cdio.controller;
 
 import org.example.cdio.dto.CartItem;
 import org.example.cdio.entity.*;
+import org.example.cdio.repository.OrderRepository;
 import org.example.cdio.repository.ProductRepository;
 import org.example.cdio.repository.StoreRepository;
 import org.example.cdio.repository.UserRepository;
 import org.example.cdio.service.CartService;
+import org.example.cdio.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
 import java.util.Map;
@@ -34,6 +35,12 @@ public class StoreController {
 
     @Autowired
     private CartService cartService;
+
+    @Autowired
+    private OrderService orderService;
+
+    @Autowired
+    private OrderRepository orderRepository;
 
     // dashboard
     @GetMapping("/dashboard")
@@ -162,10 +169,33 @@ public class StoreController {
         return "redirect:/store/cart";
     }
 
-    // Chuc nang don hang da duoc tat.
+    // checkout
+    @PostMapping("/checkout")
+    public String checkout(Principal principal){
+
+        Order order = orderService.createOrderFromCart(principal);
+
+        boolean enoughStock = orderService.checkInventory(order);
+
+        if(enoughStock){
+            cartService.clear();
+            return "redirect:/payment/momo/" + order.getId();
+
+        }else{
+
+            order.setStatus(OrderStatus.PENDING);
+            orderRepository.save(order);
+
+            return "redirect:/store/orders";
+        }
+    }
+
+    // tạo order
     @PostMapping("/order/create")
-    public String createOrder(RedirectAttributes redirectAttributes){
-        redirectAttributes.addFlashAttribute("errorMessage", "Chuc nang don hang tam thoi da tat.");
-        return "redirect:/store/cart";
+    public String createOrder(Principal principal){
+
+        Order order = orderService.createOrderFromCart(principal);
+
+        return "redirect:/payment/vietqr/" + order.getId();
     }
 }

@@ -5,12 +5,12 @@ import org.example.cdio.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.http.SessionCreationPolicy;
 
 @Configuration
 @EnableWebSecurity
@@ -21,36 +21,43 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
         http
+
                 .csrf(csrf -> csrf.disable())
+
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
+
                 .authorizeHttpRequests(auth -> auth
+
                         .requestMatchers(
-                                "/",
+                            "/",
+                            "/error",
                                 "/login",
                                 "/store/register",
                                 "/payment/**",
                                 "/order-approved",
-                                "/api/**",
+                                "/store/order/api/**",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**"
                         ).permitAll()
-                        .requestMatchers("/store/dashboard").permitAll()
+
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/store/**").hasRole("STORE")
                         .requestMatchers("/shipper/**").hasRole("SHIPPER")
+
                         .anyRequest().authenticated()
                 )
+
                 .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/login")
-                        .successHandler(successHandler())
-                        .failureUrl("/login?error")
-                        .permitAll()
+                    .loginPage("/login")
+                    .successHandler(successHandler())
+                    .permitAll()
                 )
+
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login")
@@ -58,6 +65,7 @@ public class SecurityConfig {
                         .deleteCookies("JSESSIONID")
                         .permitAll()
                 )
+
                 .userDetailsService(userDetailsService);
 
         return http.build();
@@ -65,16 +73,24 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationSuccessHandler successHandler() {
-        return (request, response, authentication) -> {
-            String role = authentication.getAuthorities().iterator().next().getAuthority();
 
-            if ("ROLE_ADMIN".equals(role)) {
+        return (request, response, authentication) -> {
+
+            String role = authentication.getAuthorities()
+                    .iterator()
+                    .next()
+                    .getAuthority();
+
+            if(role.equals("ROLE_ADMIN")){
                 response.sendRedirect("/admin/dashboard");
-            } else if ("ROLE_STORE".equals(role)) {
+            }
+            else if(role.equals("ROLE_STORE")){
                 response.sendRedirect("/store/dashboard");
-            } else if ("ROLE_SHIPPER".equals(role)) {
+            }
+            else if(role.equals("ROLE_SHIPPER")){
                 response.sendRedirect("/shipper/dashboard");
-            } else {
+            }
+            else{
                 response.sendRedirect("/login");
             }
         };

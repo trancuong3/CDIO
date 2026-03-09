@@ -2,19 +2,15 @@ package org.example.cdio.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.cdio.entity.Delivery;
+import org.example.cdio.entity.DeliveryStatus;
 import org.example.cdio.entity.Order;
 import org.example.cdio.entity.OrderItem;
 import org.example.cdio.entity.OrderStatus;
-import org.example.cdio.entity.Store;
 import org.example.cdio.entity.User;
 import org.example.cdio.repository.DeliveryRepository;
-import org.example.cdio.repository.DonHangLegacyProjection;
-import org.example.cdio.repository.DonHangLegacyRepository;
 import org.example.cdio.repository.OrderItemRepository;
 import org.example.cdio.repository.OrderRepository;
 import org.example.cdio.repository.UserRepository;
-import org.springframework.dao.DataAccessException;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,644 +20,164 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.math.BigDecimal;
 import java.security.Principal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Locale;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/shipper")
 public class ShipperController {
 
-    private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final DeliveryRepository deliveryRepository;
-    private final DonHangLegacyRepository donHangLegacyRepository;
+    private final UserRepository userRepository;
 
-    // Chuc nang: Hien thi dashboard shipper voi du lieu don thuong, don legacy, lich su giao va chi tiet don duoc chon.
-    // Cach hoat dong: Lay user hien tai -> truy van cac danh sach can thiet -> resolve ban ghi duoc chon -> gan model va tra ve view.
     @GetMapping("/dashboard")
-    public String dashboard(
-            @RequestParam(value = "orderId", required = false) Long orderId,
-            @RequestParam(value = "deliveryId", required = false) Long deliveryId,
-            Principal principal,
-            Model model
-    ) {
-        User shipper = resolveCurrentUser(principal);
-        model.addAttribute("shipperName", shipper.getFullName() != null ? shipper.getFullName() : shipper.getUsername());
-        model.addAttribute("shipperId", shipper.getId());
+    public String dashboard(@RequestParam(value = "deliveryId", required = false) Long deliveryId,
+                            Principal principal,
+                            Model model) {
+        User currentUser = currentUser(principal);
+        String shipperName = displayName(currentUser);
 
-        List<Order> pendingOrders = orderRepository.findByStatusWithStoreOrderByCreatedAtDesc(OrderStatus.APPROVED);
-        List<Order> deliveringOrders = orderRepository.findByCreatedByAndStatusWithStoreOrderByCreatedAtDesc(
-                shipper.getId(),
-                OrderStatus.DELIVERING
-        );
-        List<Delivery> deliveryHistory = deliveryRepository.findByDeliveredByOrderByCreatedAtDesc(shipper.getId());
-        List<DonHangLegacyProjection> legacyOrders = readLegacyOrdersSafe();
-        Map<String, String> legacyStatusByOrder = buildLegacyStatusMap(shipper.getId());
-        Set<String> legacyOwnedOrderIds = new HashSet<>(legacyStatusByOrder.keySet());
+        List<Order> availableOrders = orderRepository.findByStatusOrderByCreatedAtDesc(OrderStatus.APPROVED)
+                .stream()
+                .filter(order -> !deliveryRepository.existsByOrderId(order.getId()))
+                .toList();
 
-        model.addAttribute("pendingOrders", pendingOrders);
-        model.addAttribute("deliveringOrders", deliveringOrders);
-        model.addAttribute("deliveryHistory", deliveryHistory);
-        model.addAttribute("legacyOrders", legacyOrders);
-        model.addAttribute("legacyStatusByOrder", legacyStatusByOrder);
-        model.addAttribute("legacyOwnedOrderIds", legacyOwnedOrderIds);
-        model.addAttribute("deliveryStatusOptions", List.of("DELIVERING", "DELIVERED", "REJECTED", "CANCELLED"));
+        List<Delivery> myDeliveries = deliveryRepository.findByDelivererNameOrderByShippedAtDesc(shipperName);
+        Delivery selectedDelivery = resolveSelectedDelivery(myDeliveries, deliveryId);
 
-        Delivery selectedDelivery = resolveSelectedDelivery(deliveryHistory, deliveryId);
-        model.addAttribute("selectedDelivery", selectedDelivery);
-
-        Set<String> orderCodeOptions = new LinkedHashSet<>(
-            legacyOrders.stream()
-                .map(DonHangLegacyProjection::getMaDonHang)
-                .filter(code -> code != null && !code.isBlank())
-                .toList()
-        );
-        if (selectedDelivery != null && selectedDelivery.getMaDonHang() != null && !selectedDelivery.getMaDonHang().isBlank()) {
-            orderCodeOptions.add(selectedDelivery.getMaDonHang());
-        }
-        model.addAttribute("orderCodeOptions", orderCodeOptions.stream().toList());
-
-        Map<String, Long> legacyIdByCode = legacyOrders.stream()
-            .filter(o -> o.getMaDonHang() != null && !o.getMaDonHang().isBlank() && o.getId() != null)
-            .collect(Collectors.toMap(DonHangLegacyProjection::getMaDonHang, DonHangLegacyProjection::getId, (a, b) -> a));
-
-        if (selectedDelivery != null
-                && selectedDelivery.getMaDonHang() != null
-                && !selectedDelivery.getMaDonHang().isBlank()
-                && !legacyIdByCode.containsKey(selectedDelivery.getMaDonHang())) {
-            DonHangLegacyProjection selectedLegacy = findLegacyOrderSafe(selectedDelivery.getMaDonHang());
-            if (selectedLegacy != null && selectedLegacy.getId() != null) {
-                legacyIdByCode.put(selectedLegacy.getMaDonHang(), selectedLegacy.getId());
+        List<OrderItem> orderItems = Collections.emptyList();
+        Order selectedOrder = null;
+        if (selectedDelivery != null) {
+            selectedOrder = orderRepository.findById(selectedDelivery.getOrderId()).orElse(null);
+            if (selectedOrder != null) {
+                orderItems = orderItemRepository.findByOrderIdWithDetails(selectedOrder.getId());
             }
         }
 
-        model.addAttribute("legacyIdByCode", legacyIdByCode);
-        Long selectedLegacyId = selectedDelivery != null ? legacyIdByCode.get(selectedDelivery.getMaDonHang()) : null;
-        model.addAttribute("selectedLegacyId", selectedLegacyId);
-
-        Long selectedOrderId = resolveSelectedOrderId(orderId, deliveringOrders);
-        if (selectedOrderId == null) {
-            model.addAttribute("orderItems", Collections.emptyList());
-            model.addAttribute("orderStatuses", List.of(OrderStatus.DELIVERING, OrderStatus.DELIVERED, OrderStatus.CANCELLED));
-            return "shipper/dashboard";
-        }
-
-        List<Delivery> deliveryRows = deliveryRepository.findByOrderIdAndDeliveredByOrderByIdAsc(selectedOrderId, shipper.getId());
-        List<OrderLineView> orderLines = toOrderLinesFromDeliveries(deliveryRows);
-
-        List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithDetails(selectedOrderId);
-        if (orderItems.isEmpty() && orderLines.isEmpty()) {
-            model.addAttribute("orderItems", Collections.emptyList());
-            model.addAttribute("orderLines", Collections.emptyList());
-            model.addAttribute("orderStatuses", List.of(OrderStatus.DELIVERING, OrderStatus.DELIVERED, OrderStatus.CANCELLED));
-            return "shipper/dashboard";
-        }
-
-        Order order = !orderItems.isEmpty()
-            ? orderItems.get(0).getOrder()
-            : orderRepository.findById(selectedOrderId).orElse(null);
-
-        if (order == null) {
-            model.addAttribute("orderItems", Collections.emptyList());
-            model.addAttribute("orderLines", orderLines);
-            model.addAttribute("orderStatuses", List.of(OrderStatus.DELIVERING, OrderStatus.DELIVERED, OrderStatus.CANCELLED));
-            return "shipper/dashboard";
-        }
-
-        Store store = order.getStore();
-        Delivery latestDelivery = deliveryRows.stream()
-            .filter(d -> d.getCreatedAt() != null)
-            .max(Comparator.comparing(Delivery::getCreatedAt))
-            .orElseGet(() -> deliveryRows.stream().findFirst().orElse(null));
-
+        model.addAttribute("shipperName", shipperName);
+        model.addAttribute("availableOrders", availableOrders);
+        model.addAttribute("myDeliveries", myDeliveries);
+        model.addAttribute("selectedDelivery", selectedDelivery);
+        model.addAttribute("selectedOrder", selectedOrder);
         model.addAttribute("orderItems", orderItems);
-        model.addAttribute("orderLines", orderLines);
-        model.addAttribute("orderId", order.getId());
-        model.addAttribute("deliverySlipCode", "PXG-" + order.getId());
-        model.addAttribute("orderCode", order.getId());
-        model.addAttribute("createdDate", latestDelivery != null && latestDelivery.getCreatedAt() != null
-            ? latestDelivery.getCreatedAt()
-            : order.getCreatedAt());
-        model.addAttribute("deliveryStatus", resolveStatus(latestDelivery, order));
-        model.addAttribute("incident", latestDelivery != null ? latestDelivery.getIncident() : order.getRejectedReason());
-        model.addAttribute("orderTotal", order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO);
-
-        if (store != null) {
-            model.addAttribute("customerName", store.getRepresentativeName() != null ? store.getRepresentativeName() : store.getName());
-            model.addAttribute("customerPhone", order.getSdt() != null ? order.getSdt() : store.getPhone());
-            model.addAttribute("deliveryAddress", store.getAddress());
-        }
-
-        model.addAttribute("orderStatuses", List.of(OrderStatus.DELIVERING, OrderStatus.DELIVERED, OrderStatus.CANCELLED));
+        model.addAttribute("deliveryStatusOptions", List.of(DeliveryStatus.SHIPPED, DeliveryStatus.DELIVERED, DeliveryStatus.FAILED));
         return "shipper/dashboard";
     }
 
-    // Chuc nang: Cho phep shipper nhan mot don thuong dang o trang thai APPROVED.
-    // Cach hoat dong: Kiem tra trang thai don -> cap nhat createdBy + status cua Order -> tao cac dong Delivery tu tung OrderItem.
     @PostMapping("/orders/{orderId}/accept")
-    public String acceptOrder(
-            @PathVariable Long orderId,
-            Principal principal,
-            RedirectAttributes redirectAttributes
-    ) {
-        User shipper = resolveCurrentUser(principal);
+    public String acceptOrder(@PathVariable Long orderId,
+                              Principal principal,
+                              RedirectAttributes redirectAttributes) {
+        User currentUser = currentUser(principal);
+        String shipperName = displayName(currentUser);
+
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay don hang."));
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay don hang"));
 
         if (order.getStatus() != OrderStatus.APPROVED) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Don hang da duoc xu ly boi nguoi khac.");
+            redirectAttributes.addFlashAttribute("errorMessage", "Don hang khong o trang thai san sang giao.");
             return "redirect:/shipper/dashboard";
         }
 
-        order.setCreatedBy(shipper.getId());
+        if (deliveryRepository.existsByOrderId(orderId)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Don hang da duoc nhan giao.");
+            return "redirect:/shipper/dashboard";
+        }
+
+        Delivery delivery = new Delivery();
+        delivery.setOrderId(orderId);
+        delivery.setDelivererName(shipperName);
+        delivery.setShippedAt(LocalDateTime.now());
+        delivery.setStatus(DeliveryStatus.SHIPPED);
+        deliveryRepository.save(delivery);
+
         order.setStatus(OrderStatus.DELIVERING);
         orderRepository.save(order);
 
-        List<OrderItem> orderItems = orderItemRepository.findByOrderIdWithDetails(orderId);
-        LocalDateTime now = LocalDateTime.now();
-        for (OrderItem item : orderItems) {
-            Delivery delivery = new Delivery();
-            delivery.setMaDonHang(String.valueOf(order.getId()));
-            delivery.setNgayDat(now.toLocalDate());
-            delivery.setTrangThai(OrderStatus.DELIVERING.name());
-            delivery.setSdt(order.getSdt());
-            delivery.setOrderId(order.getId());
-            delivery.setDelivererName(shipper.getFullName() != null ? shipper.getFullName() : shipper.getUsername());
-            delivery.setShippedAt(now);
-            delivery.setStatus(OrderStatus.DELIVERING.name());
-            delivery.setProductId(item.getProduct() != null ? item.getProduct().getId() : null);
-            delivery.setQuantity(item.getQuantity());
-            delivery.setUnitPrice(item.getUnitPrice());
-            delivery.setLineTotal(item.getLineTotal());
-            delivery.setDeliveredBy(shipper.getId());
-            delivery.setCreatedAt(now);
-            deliveryRepository.save(delivery);
-        }
-
         redirectAttributes.addFlashAttribute("successMessage", "Nhan don thanh cong.");
-        return "redirect:/shipper/dashboard?orderId=" + orderId;
-    }
-
-    // Chuc nang: Cap nhat thong tin giao hang cua don thuong do chinh shipper dang dang nhap phu trach.
-    // Cach hoat dong: Xac thuc quyen tren Order -> cap nhat ngay/trang thai/su co tren Order -> dong bo cac dong Delivery cua don.
-    @PostMapping("/delivery/update")
-    public String updateDelivery(
-            @RequestParam("orderId") Long orderId,
-            @RequestParam("deliveryDate") LocalDate deliveryDate,
-            @RequestParam("deliveryStatus") OrderStatus deliveryStatus,
-            @RequestParam(value = "incident", required = false) String incident,
-            Principal principal,
-            RedirectAttributes redirectAttributes
-    ) {
-        User shipper = resolveCurrentUser(principal);
-        Order order = orderRepository.findByIdAndCreatedBy(orderId, shipper.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Ban khong co quyen cap nhat don nay."));
-
-        LocalDateTime base = order.getCreatedAt() != null ? order.getCreatedAt() : LocalDateTime.now();
-        order.setCreatedAt(LocalDateTime.of(deliveryDate, base.toLocalTime()));
-        order.setStatus(deliveryStatus);
-        order.setRejectedReason(incident);
-        orderRepository.save(order);
-
-        List<Delivery> deliveries = deliveryRepository.findByOrderIdAndDeliveredByOrderByIdAsc(orderId, shipper.getId());
-        for (Delivery delivery : deliveries) {
-            delivery.setNgayDat(deliveryDate);
-            delivery.setTrangThai(deliveryStatus.name());
-            delivery.setIncident(incident);
-            delivery.setCreatedAt(LocalDateTime.now());
-        }
-        deliveryRepository.saveAll(deliveries);
-
-        redirectAttributes.addFlashAttribute("successMessage", "Da cap nhat trang thai giao hang.");
-        return "redirect:/shipper/dashboard?orderId=" + orderId;
-    }
-
-    // Chuc nang: Nhan mot don legacy de bat dau giao.
-    // Cach hoat dong: Doc don legacy -> chan truong hop da duoc xu ly -> update trang thai legacy sang DELIVERING -> tao 1 dong Delivery.
-    @PostMapping("/legacy/{maDonHang}/accept")
-    public String acceptLegacyOrder(
-            @PathVariable String maDonHang,
-            Principal principal,
-            RedirectAttributes redirectAttributes
-    ) {
-        User shipper = resolveCurrentUser(principal);
-        DonHangLegacyProjection legacyOrder = donHangLegacyRepository.findLegacyOrderById(maDonHang)
-                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay don hang legacy."));
-
-        String appLegacyStatus = toAppStatus(legacyOrder.getTrangThai());
-        if ("DELIVERING".equalsIgnoreCase(appLegacyStatus)
-                || "DELIVERED".equalsIgnoreCase(appLegacyStatus)) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Don hang nay da duoc shipper khac xu ly.");
-            return "redirect:/shipper/dashboard";
-        }
-
-        int updated = donHangLegacyRepository.updateLegacyStatus(maDonHang, toLegacyStatus("DELIVERING"));
-        if (updated == 0) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Khong cap nhat duoc trang thai don legacy.");
-            return "redirect:/shipper/dashboard";
-        }
-
-        Long savedDeliveryId = upsertLegacyDeliveryRecord(maDonHang, shipper, legacyOrder, "DELIVERING");
-        if (savedDeliveryId != null) {
-            redirectAttributes.addFlashAttribute("successMessage", "Da nhan giao don legacy #" + maDonHang + ".");
-            return "redirect:/shipper/dashboard?deliveryId=" + savedDeliveryId;
-        }
-
-        redirectAttributes.addFlashAttribute("successMessage", "Da nhan giao don legacy #" + maDonHang + ".");
-        redirectAttributes.addFlashAttribute("errorMessage", "Don da duoc nhan giao, nhung khong ghi duoc bang deliveries (thieu order_id hop le).");
         return "redirect:/shipper/dashboard";
     }
 
-    // Chuc nang: Xac nhan giao thanh cong cho don legacy da duoc shipper nhan truoc do.
-    // Cach hoat dong: Tim ban ghi assigned cua shipper -> cap nhat trang thai legacy DELIVERED -> chen them 1 dong Delivery xac nhan.
-    @PostMapping("/legacy/{maDonHang}/confirm")
-    public String confirmLegacyDelivered(
-            @PathVariable String maDonHang,
-            Principal principal,
-            RedirectAttributes redirectAttributes
-    ) {
-        User shipper = resolveCurrentUser(principal);
-        DonHangLegacyProjection legacyOrder = donHangLegacyRepository.findLegacyOrderById(maDonHang)
-                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay don hang legacy."));
-
-        String appLegacyStatus = toAppStatus(legacyOrder.getTrangThai());
-        if (!"DELIVERING".equalsIgnoreCase(appLegacyStatus)) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Don legacy nay chua o trang thai dang giao.");
-            return "redirect:/shipper/dashboard";
-        }
-
-        int updated = donHangLegacyRepository.updateLegacyStatus(maDonHang, toLegacyStatus("DELIVERED"));
-        if (updated == 0) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Khong cap nhat duoc trang thai giao xong.");
-            return "redirect:/shipper/dashboard";
-        }
-
-        Long savedDeliveryId = upsertLegacyDeliveryRecord(maDonHang, shipper, legacyOrder, "DELIVERED");
-        if (savedDeliveryId == null) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Da cap nhat don_hangs thanh cong, nhung khong ghi duoc bang deliveries (thieu order_id hop le).");
-        }
-
-        redirectAttributes.addFlashAttribute("successMessage", "Da xac nhan giao thanh cong don legacy #" + maDonHang + ".");
-        return "redirect:/shipper/dashboard";
-    }
-
-    // Chuc nang: Sua thong tin chi tiet cua mot phieu giao legacy thuoc shipper hien tai.
-    // Cach hoat dong: Tim Delivery theo deliveryId + deliveredBy -> cap nhat field giao hang -> luu lai va dong bo trang thai sang don legacy.
     @PostMapping("/deliveries/{deliveryId}/update")
-    public String updateLegacyDelivery(
-            @PathVariable Long deliveryId,
-            @RequestParam("maDonHang") String maDonHang,
-            @RequestParam("trangThai") String trangThai,
-            @RequestParam("ngayDat") LocalDate ngayDat,
-            @RequestParam(value = "sdt", required = false) String sdt,
-            @RequestParam(value = "incident", required = false) String incident,
-            Principal principal,
-            RedirectAttributes redirectAttributes
-    ) {
-        User shipper = resolveCurrentUser(principal);
-        Delivery delivery = deliveryRepository.findByIdAndDeliveredBy(deliveryId, shipper.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay phieu giao cua ban."));
+    public String updateDelivery(@PathVariable Long deliveryId,
+                                 @RequestParam("status") String status,
+                                 @RequestParam(value = "issueNote", required = false) String issueNote,
+                                 Principal principal,
+                                 RedirectAttributes redirectAttributes) {
+        String shipperName = displayName(currentUser(principal));
 
-        DonHangLegacyProjection legacyOrder = findLegacyOrderSafe(maDonHang);
+        Delivery delivery = deliveryRepository.findByIdAndDelivererName(deliveryId, shipperName)
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay phieu giao."));
 
-        delivery.setMaDonHang(maDonHang);
-        // Keep existing order_id to satisfy FK; legacy flow only syncs deliveries <-> don_hangs.
-        delivery.setTrangThai(trangThai);
-        delivery.setNgayDat(ngayDat);
-        delivery.setSdt(sdt);
-        if (legacyOrder != null && legacyOrder.getTongTien() != null) {
-            delivery.setUnitPrice(legacyOrder.getTongTien());
-            delivery.setLineTotal(legacyOrder.getTongTien());
-        }
-        delivery.setIncident(incident);
-        delivery.setStatus(trangThai);
-        delivery.setIssueNote(incident);
-        delivery.setDelivererName(shipper.getFullName() != null ? shipper.getFullName() : shipper.getUsername());
-        delivery.setDeliveredBy(shipper.getId());
-        if ("DELIVERING".equalsIgnoreCase(trangThai) && delivery.getShippedAt() == null) {
-            delivery.setShippedAt(LocalDateTime.now());
-        }
-        if ("DELIVERED".equalsIgnoreCase(trangThai)) {
+        DeliveryStatus dbStatus = normalizeDeliveryStatus(status);
+        delivery.setStatus(dbStatus);
+        delivery.setIssueNote(issueNote);
+        if (dbStatus == DeliveryStatus.DELIVERED) {
             delivery.setDeliveredAt(LocalDateTime.now());
         }
-        delivery.setCreatedAt(LocalDateTime.now());
         deliveryRepository.save(delivery);
 
-        if (maDonHang != null && !maDonHang.isBlank()) {
-            donHangLegacyRepository.updateLegacyStatus(maDonHang, toLegacyStatus(trangThai));
+        Order order = orderRepository.findById(delivery.getOrderId())
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay don hang."));
+        order.setStatus(toOrderStatus(dbStatus));
+        if (dbStatus == DeliveryStatus.FAILED) {
+            order.setRejectedReason(issueNote);
         }
+        orderRepository.save(order);
 
-        redirectAttributes.addFlashAttribute("successMessage", "Da cap nhat thong tin giao hang.");
+        redirectAttributes.addFlashAttribute("successMessage", "Da cap nhat trang thai giao hang.");
         return "redirect:/shipper/dashboard?deliveryId=" + deliveryId;
     }
 
-    // Chuc nang: Cap nhat thong tin giao legacy ngay ca khi chua co ban ghi deliveries truoc do.
-    // Cach hoat dong: Dong bo trang thai len don_hangs truoc, sau do upsert 1 dong deliveries neu tim duoc order_id hop le.
-    @PostMapping("/deliveries/legacy/update")
-    public String updateLegacyDeliveryDirect(
-            @RequestParam("maDonHang") String maDonHang,
-            @RequestParam("trangThai") String trangThai,
-            @RequestParam("ngayDat") LocalDate ngayDat,
-            @RequestParam(value = "sdt", required = false) String sdt,
-            @RequestParam(value = "incident", required = false) String incident,
-            Principal principal,
-            RedirectAttributes redirectAttributes
-    ) {
-        User shipper = resolveCurrentUser(principal);
-        DonHangLegacyProjection legacyOrder = donHangLegacyRepository.findLegacyOrderById(maDonHang)
-                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay don hang legacy."));
-
-        int updated = donHangLegacyRepository.updateLegacyStatus(maDonHang, toLegacyStatus(trangThai));
-        if (updated == 0) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Khong cap nhat duoc trang thai don legacy.");
-            return "redirect:/shipper/dashboard";
-        }
-
-        Long savedDeliveryId = upsertLegacyDeliveryRecord(
-                maDonHang,
-                shipper,
-                legacyOrder,
-                trangThai,
-                ngayDat,
-                sdt,
-                incident
-        );
-
-        if (savedDeliveryId == null) {
-            redirectAttributes.addFlashAttribute("successMessage", "Da cap nhat don_hangs thanh cong.");
-            redirectAttributes.addFlashAttribute("errorMessage", "Khong ghi duoc bang deliveries vi chua tim thay order_id hop le.");
-            return "redirect:/shipper/dashboard";
-        }
-
-        redirectAttributes.addFlashAttribute("successMessage", "Da cap nhat thong tin giao hang.");
-        return "redirect:/shipper/dashboard?deliveryId=" + savedDeliveryId;
-    }
-
-    // Chuc nang: Tim don legacy theo ma don theo huong fail-safe.
-    // Cach hoat dong: Goi repository trong try/catch; neu DataAccessException thi tra ve null de khong vo flow.
-    private DonHangLegacyProjection findLegacyOrderSafe(String maDonHang) {
-        try {
-            return donHangLegacyRepository.findLegacyOrderById(maDonHang).orElse(null);
-        } catch (DataAccessException ex) {
-            return null;
-        }
-    }
-
-    // Chuc nang: Lay danh sach don legacy gan day cho dashboard.
-    // Cach hoat dong: Truy van repository va fallback ve danh sach rong neu co loi truy cap du lieu.
-    private List<DonHangLegacyProjection> readLegacyOrdersSafe() {
-        try {
-            return donHangLegacyRepository.findRecentLegacyOrders();
-        } catch (DataAccessException ex) {
-            return Collections.emptyList();
-        }
-    }
-
-    // Chuc nang: Xac dinh phieu giao dang duoc chon de hien thi chi tiet.
-    // Cach hoat dong: Neu deliveryId hop le thi tim theo id, neu khong co thi fallback ve phan tu dau tien trong lich su.
-    private Delivery resolveSelectedDelivery(List<Delivery> deliveryHistory, Long deliveryId) {
-        if (deliveryHistory == null || deliveryHistory.isEmpty()) {
-            return null;
-        }
-
-        if (deliveryId == null) {
-            return deliveryHistory.get(0);
-        }
-
-        return deliveryHistory.stream()
-                .filter(d -> d.getId() != null && d.getId().equals(deliveryId))
-                .findFirst()
-                .orElse(deliveryHistory.get(0));
-    }
-
-    // Chuc nang: Xac dinh orderId tham chieu khi tao ban ghi Delivery cho don legacy.
-    // Cach hoat dong: Uu tien lay orderId tu dong Delivery moi nhat cung maDonHang, neu khong co thi fallback sang id don bat ky.
-    private Long resolveOrderIdForLegacyInsert(String maDonHang) {
-        return deliveryRepository.findFirstByMaDonHangOrderByCreatedAtDesc(maDonHang)
-                .map(Delivery::getOrderId)
-                .filter(id -> id != null)
-                .orElseGet(() -> orderRepository.findAll().stream().map(Order::getId).findFirst().orElse(1L));
-    }
-
-    // Chuc nang: Ghi nhat ky giao legacy vao deliveries theo co che best-effort.
-    // Cach hoat dong: Upsert theo (maDonHang, deliveredBy), chi save khi tim duoc order_id hop le de tranh loi FK.
-    private Long upsertLegacyDeliveryRecord(
-            String maDonHang,
-            User shipper,
-            DonHangLegacyProjection legacyOrder,
-            String appStatus
-        ) {
-        return upsertLegacyDeliveryRecord(
-            maDonHang,
-            shipper,
-            legacyOrder,
-            appStatus,
-            LocalDate.now(),
-            legacyOrder != null ? legacyOrder.getSdt() : null,
-            null
-        );
-        }
-
-        // Chuc nang: Ghi/cap nhat chi tiet phieu giao legacy theo du lieu nguoi dung nhap.
-        // Cach hoat dong: Upsert theo (maDonHang, deliveredBy), merge field tu form va auto-dat moc thoi gian theo status.
-        private Long upsertLegacyDeliveryRecord(
-            String maDonHang,
-            User shipper,
-            DonHangLegacyProjection legacyOrder,
-            String appStatus,
-            LocalDate ngayDat,
-            String sdt,
-            String incident
-    ) {
-        Delivery delivery = deliveryRepository
-                .findFirstByMaDonHangAndDeliveredByOrderByCreatedAtDesc(maDonHang, shipper.getId())
-                .orElseGet(Delivery::new);
-
-        Long resolvedOrderId = resolveValidOrderIdForLegacy(maDonHang, delivery.getOrderId());
-        delivery.setMaDonHang(maDonHang);
-        delivery.setOrderId(resolvedOrderId);
-        delivery.setNgayDat(ngayDat != null ? ngayDat : LocalDate.now());
-        delivery.setTrangThai(appStatus);
-        delivery.setStatus(appStatus);
-        if (sdt != null) {
-            delivery.setSdt(sdt);
-        } else if (delivery.getSdt() == null && legacyOrder != null) {
-            delivery.setSdt(legacyOrder.getSdt());
-        }
-        if (legacyOrder != null && legacyOrder.getTongTien() != null) {
-            delivery.setUnitPrice(legacyOrder.getTongTien());
-            delivery.setLineTotal(legacyOrder.getTongTien());
-        }
-        delivery.setIncident(incident);
-        delivery.setIssueNote(incident);
-        delivery.setDelivererName(shipper.getFullName() != null ? shipper.getFullName() : shipper.getUsername());
-        delivery.setDeliveredBy(shipper.getId());
-        if ("DELIVERING".equalsIgnoreCase(appStatus) && delivery.getShippedAt() == null) {
-            delivery.setShippedAt(LocalDateTime.now());
-        }
-        if ("DELIVERED".equalsIgnoreCase(appStatus)) {
-            if (delivery.getShippedAt() == null) {
-                delivery.setShippedAt(LocalDateTime.now());
-            }
-            delivery.setDeliveredAt(LocalDateTime.now());
-        }
-        delivery.setCreatedAt(LocalDateTime.now());
-
-        try {
-            return deliveryRepository.save(delivery).getId();
-        } catch (DataIntegrityViolationException ex) {
-            return null;
-        }
-    }
-
-    // Chuc nang: Tim order_id hop le de gan FK cho deliveries trong luong legacy.
-    // Cach hoat dong: Uu tien id dang co neu ton tai; neu khong thi parse maDonHang thanh so va check orders.existsById.
-    private Long resolveValidOrderIdForLegacy(String maDonHang, Long currentOrderId) {
-        if (currentOrderId != null && orderRepository.existsById(currentOrderId)) {
-            return currentOrderId;
-        }
-
-        if (maDonHang == null || maDonHang.isBlank()) {
-            return null;
-        }
-
-        try {
-            Long parsedOrderId = Long.valueOf(maDonHang.trim());
-            return orderRepository.existsById(parsedOrderId) ? parsedOrderId : null;
-        } catch (NumberFormatException ex) {
-            return null;
-        }
-    }
-
-    // Chuc nang: Quy doi trang thai app sang enum legacy trong bang don_hangs.
-    // Cach hoat dong: Chap nhan ca status app (UPPER_SNAKE) va status legacy (lowercase), sau do tra ve gia tri enum hop le cho DB.
-    private String toLegacyStatus(String status) {
-        if (status == null || status.isBlank()) {
-            return "pending";
-        }
-
-        return switch (status.trim().toUpperCase(Locale.ROOT)) {
-            case "PENDING" -> "pending";
-            case "APPROVED", "PREPARING" -> "preparing";
-            case "DELIVERING", "SHIPPING" -> "shipping";
-            case "DELIVERED" -> "delivered";
-            case "CANCELLED", "CANCELED", "REJECTED" -> "cancelled";
-            default -> status.trim().toLowerCase(Locale.ROOT);
-        };
-    }
-
-    // Chuc nang: Quy doi trang thai legacy trong DB ve format app de xu ly logic dieu kien.
-    // Cach hoat dong: Chuan hoa lowercase truoc, sau do map ve enum-name dang app su dung trong code.
-    private String toAppStatus(String status) {
-        if (status == null || status.isBlank()) {
-            return "PENDING";
-        }
-
-        return switch (status.trim().toLowerCase(Locale.ROOT)) {
-            case "pending" -> "PENDING";
-            case "preparing" -> "APPROVED";
-            case "shipping" -> "DELIVERING";
-            case "delivered" -> "DELIVERED";
-            case "cancelled", "canceled" -> "CANCELLED";
-            default -> status.trim().toUpperCase(Locale.ROOT);
-        };
-    }
-
-    // Chuc nang: Tao map trang thai don legacy theo ma don cho shipper hien tai.
-    // Cach hoat dong: Duyet cac dong Delivery da sap xep giam dan theo thoi gian va chi lay trang thai dau tien cho moi ma don.
-    private Map<String, String> buildLegacyStatusMap(Long shipperId) {
-        List<Delivery> legacyRows = deliveryRepository.findByDeliveredByAndMaDonHangIsNotNullOrderByCreatedAtDesc(shipperId);
-        Map<String, String> map = new HashMap<>();
-        for (Delivery row : legacyRows) {
-            if (row.getMaDonHang() == null || map.containsKey(row.getMaDonHang())) {
-                continue;
-            }
-            map.put(row.getMaDonHang(), row.getTrangThai());
-        }
-        return map;
-    }
-
-    // Chuc nang: Chuyen danh sach Delivery thanh danh sach dong hang de render tren giao dien.
-    // Cach hoat dong: Map tung Delivery sang OrderLineView roi loc bo cac dong khong co du lieu so luong/gia/tong.
-    private List<OrderLineView> toOrderLinesFromDeliveries(List<Delivery> deliveries) {
+    private Delivery resolveSelectedDelivery(List<Delivery> deliveries, Long deliveryId) {
         if (deliveries == null || deliveries.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<OrderLineView> lines = new ArrayList<>();
-        for (Delivery d : deliveries) {
-            lines.add(new OrderLineView(
-                    d.getProductId(),
-                    d.getQuantity(),
-                    d.getUnitPrice(),
-                    d.getLineTotal()
-            ));
-        }
-        return lines.stream()
-                .filter(l -> l.quantity() != null || l.unitPrice() != null || l.lineTotal() != null)
-                .collect(Collectors.toList());
-    }
-
-    // Chuc nang: Xac dinh trang thai don dung de hien thi o dashboard.
-    // Cach hoat dong: Uu tien parse trangThai tu Delivery moi nhat; neu khong parse duoc thi dung status hien co cua Order.
-    private OrderStatus resolveStatus(Delivery latestDelivery, Order order) {
-        if (latestDelivery != null && latestDelivery.getTrangThai() != null) {
-            try {
-                return OrderStatus.valueOf(latestDelivery.getTrangThai());
-            } catch (IllegalArgumentException ignored) {
-                // Keep fallback behavior when legacy data has unknown status values.
-            }
-        }
-        return order.getStatus();
-    }
-
-    // Chuc nang: Dinh nghia DTO noi bo cho mot dong hang trong phieu giao.
-    // Cach hoat dong: Record giu cac truong can render (productId, quantity, unitPrice, lineTotal) theo dang immutable.
-    private record OrderLineView(
-            Long productId,
-            Integer quantity,
-            BigDecimal unitPrice,
-            BigDecimal lineTotal
-    ) {
-    }
-
-    // Chuc nang: Resolve tai khoan shipper dang dang nhap tu Principal.
-    // Cach hoat dong: Validate principal/username truoc, sau do truy van theo username; nem loi neu khong tim thay.
-    private User resolveCurrentUser(Principal principal) {
-        if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
-            throw new IllegalArgumentException("Phien dang nhap khong hop le.");
-        }
-
-        return userRepository.findByUsername(principal.getName())
-                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay tai khoan shipper."));
-    }
-
-    // Chuc nang: Chon orderId can hien thi chi tiet o dashboard.
-    // Cach hoat dong: Uu tien orderId tu request; neu khong co thi lay don dang giao dau tien; het don thi tra ve null.
-    private Long resolveSelectedOrderId(Long requestedOrderId, List<Order> deliveringOrders) {
-        if (requestedOrderId != null) {
-            return requestedOrderId;
-        }
-
-        if (deliveringOrders.isEmpty()) {
             return null;
         }
+        if (deliveryId == null) {
+            return deliveries.get(0);
+        }
+        return deliveries.stream()
+                .filter(d -> d.getId().equals(deliveryId))
+                .findFirst()
+                .orElse(deliveries.get(0));
+    }
 
-        return deliveringOrders.get(0).getId();
+    private User currentUser(Principal principal) {
+        return userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay user dang nhap"));
+    }
+
+    private String displayName(User user) {
+        return (user.getFullName() != null && !user.getFullName().isBlank())
+                ? user.getFullName()
+                : user.getUsername();
+    }
+
+    private DeliveryStatus normalizeDeliveryStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return DeliveryStatus.NOT_SHIPPED;
+        }
+
+        return switch (status.trim().toUpperCase()) {
+            case "NOT_SHIPPED" -> DeliveryStatus.NOT_SHIPPED;
+            case "SHIPPED", "DELIVERING" -> DeliveryStatus.SHIPPED;
+            case "DELIVERED" -> DeliveryStatus.DELIVERED;
+            case "FAILED", "CANCELLED", "CANCELED", "REJECTED" -> DeliveryStatus.FAILED;
+            default -> DeliveryStatus.NOT_SHIPPED;
+        };
+    }
+
+    private OrderStatus toOrderStatus(DeliveryStatus deliveryStatus) {
+        return switch (deliveryStatus) {
+            case DELIVERED -> OrderStatus.DELIVERED;
+            case FAILED -> OrderStatus.CANCELLED;
+            case SHIPPED, NOT_SHIPPED -> OrderStatus.DELIVERING;
+            default -> OrderStatus.DELIVERING;
+        };
     }
 }
