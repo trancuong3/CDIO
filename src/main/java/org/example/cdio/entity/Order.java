@@ -29,7 +29,9 @@ public class Order {
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
-
+    @ManyToOne
+    @JoinColumn(name = "created_by")
+    private User createdBy;
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

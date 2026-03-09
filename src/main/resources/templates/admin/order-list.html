@@ -1,21 +1,98 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>list</title>
-</head>
-<body>
-<tr th:each="o:${orders}">
-    <td th:text="${o.id}"></td>
-    <td th:text="${o.status}"></td>
-    <td th:text="${o.totalAmount}"></td>
 
-    <td>
-        <form th:action="@{/admin/orders/approve/{id}(id=${o.id})}" method="post">
-            <button>Approve</button>
-        </form>
-    </td>
-</tr>
+    <title>Quản lý đơn hàng</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+</head>
+
+<body class="bg-light">
+
+<div class="container mt-5">
+
+    <h2 class="mb-4 text-center">Quản lý đơn hàng</h2>
+
+    <div class="card shadow">
+
+        <div class="card-body">
+
+            <table class="table table-bordered table-hover align-middle">
+
+                <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Trạng thái</th>
+                    <th>Tổng tiền</th>
+                    <th>Thao tác</th>
+                </tr>
+                </thead>
+
+                <tbody>
+
+                <tr th:each="o : ${orders}">
+
+                    <td th:text="${o.id}"></td>
+
+                    <td>
+                        <span class="badge bg-warning"
+                              th:if="${o.status.name() == 'PENDING'}">Chờ xử lý</span>
+
+                        <span class="badge bg-success"
+                              th:if="${o.status.name() == 'APPROVED'}">Đã duyệt</span>
+
+                        <span class="badge bg-primary"
+                              th:if="${o.status.name() == 'PAID'}">Đã thanh toán</span>
+
+                        <span class="badge bg-danger"
+                              th:if="${o.status.name() == 'REJECTED'}">Từ chối</span>
+                    </td>
+
+                    <td th:text="${#numbers.formatDecimal(o.totalAmount,0,'COMMA',0,'POINT')} + ' đ'"></td>
+
+                    <td>
+
+                        <div class="d-flex gap-2">
+
+                            <!-- xác nhận thanh toán -->
+                            <form th:action="@{/admin/orders/confirm-payment/{orderId}(orderId=${o.id})}"
+                                  method="post">
+
+                                <button class="btn btn-primary btn-sm"
+                                        th:disabled="${o.status.name() != 'PENDING'}">
+                                    Xác nhận thanh toán
+                                </button>
+
+                            </form>
+
+                            <!-- duyệt đơn -->
+                            <form th:action="@{/admin/orders/approve/{id}(id=${o.id})}"
+                                  method="post">
+
+                                <button class="btn btn-success btn-sm"
+                                        th:disabled="${o.status.name() != 'PAID'}">
+                                    Duyệt đơn
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
 
 </body>
 </html>

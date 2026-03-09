@@ -5,11 +5,12 @@ import org.example.cdio.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.config.http.SessionCreationPolicy;
 
 @Configuration
 @EnableWebSecurity
@@ -19,18 +20,48 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
 
     @Bean
-    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
+
                 .csrf(csrf -> csrf.disable())
 
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                )
+
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
+
+                        .requestMatchers(
+                                "/login",
+                                "/store/register",
+                                "/payment/**",
+                                "/order-approved",
+                                "/store/order/api/**",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**"
+                        ).permitAll()
+
+                        // cho phép redirect sau thanh toán
+                        .requestMatchers("/store/dashboard").permitAll()
+
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/store/**").hasRole("STORE")
+                        .requestMatchers("/shipper/**").hasRole("SHIPPER")
+
+                        .anyRequest().authenticated()
                 )
 
                 .formLogin(AbstractHttpConfigurer::disable)
 
-                .logout(AbstractHttpConfigurer::disable)
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll()
+                )
 
                 .userDetailsService(userDetailsService);
 
@@ -38,7 +69,32 @@ public class SecurityConfig {
     }
 
     @Bean
-    PasswordEncoder passwordEncoder() {
+    public AuthenticationSuccessHandler successHandler() {
+
+        return (request, response, authentication) -> {
+
+            String role = authentication.getAuthorities()
+                    .iterator()
+                    .next()
+                    .getAuthority();
+
+            if(role.equals("ROLE_ADMIN")){
+                response.sendRedirect("/admin/dashboard");
+            }
+            else if(role.equals("ROLE_STORE")){
+                response.sendRedirect("/store/dashboard");
+            }
+            else if(role.equals("ROLE_SHIPPER")){
+                response.sendRedirect("/shipper/dashboard");
+            }
+            else{
+                response.sendRedirect("/login");
+            }
+        };
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 }
