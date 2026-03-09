@@ -176,10 +176,9 @@ public class OrderService {
 
         Order order = new Order();
         order.setStore(store);
-        order.setCreatedBy(user.getId());
+        order.setCreatedBy(user);
         order.setCreatedAt(LocalDateTime.now());
         order.setStatus(OrderStatus.PENDING);
-        order.setSdt(store.getPhone());
 
         BigDecimal total = BigDecimal.ZERO;
 
@@ -196,7 +195,6 @@ public class OrderService {
 
             OrderItem oi = new OrderItem();
             oi.setOrder(order);
-            oi.setMaDonHang(order.getId());
             oi.setProduct(product);
             oi.setQuantity(qty);
             oi.setUnitPrice(price);
@@ -208,12 +206,6 @@ public class OrderService {
         }
         order.setTotalAmount(total);
 
-        Order savedOrder = orderRepo.save(order);
-        savedOrder.getItems().forEach(item -> {
-            if (item.getMaDonHang() == null) {
-                item.setMaDonHang(savedOrder.getId());
-            }
-        });
-        return orderRepo.save(savedOrder);
+        return orderRepo.save(order);
     }
 }
