@@ -44,7 +44,7 @@ public class AdminProductController {
                     .encodeToString(file.getBytes());
             product.setImg(base64);
         } else if (product.getId() != null) {
-            // Nếu update mà không chọn ảnh mới -> giữ ảnh cũ
+
             Product existing = productService.findById(product.getId());
             product.setImg(existing.getImg());
         }

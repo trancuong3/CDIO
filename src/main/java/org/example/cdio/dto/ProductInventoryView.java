@@ -19,7 +19,7 @@ public class ProductInventoryView {
     private LocalDateTime expiredAt;
     private Long daysLeft;
 
-    // 🔥 THÊM DÒNG NÀY
+
     private String img;
 
     // constructor
@@ -32,7 +32,7 @@ public class ProductInventoryView {
                                 Integer expiryDays,
                                 LocalDateTime expiredAt,
                                 Long daysLeft,
-                                String img) {   // 🔥 thêm vào constructor
+                                String img) {
 
         this.productId = productId;
         this.productName = productName;
@@ -46,10 +46,10 @@ public class ProductInventoryView {
         this.img = img;
     }
 
-    // getter
+
     public String getImg() {
         return img;
     }
 
-    // các getter khác giữ nguyên
+
 }

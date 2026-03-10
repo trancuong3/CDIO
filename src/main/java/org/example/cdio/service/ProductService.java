@@ -18,19 +18,19 @@ public class ProductService {
 
     public void save(Product product) {
 
-        // ===== UPDATE =====
+
         if (product.getId() != null) {
 
             Product existing = productRepo.findById(product.getId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
 
-            // 🔥 Giữ nguyên createdAt
+
             product.setCreatedAt(existing.getCreatedAt());
         }
 
         Product saved = productRepo.save(product);
 
-        // Nếu chưa có inventory thì tạo mới
+
         inventoryRepo.findByProductId(saved.getId())
                 .orElseGet(() -> {
                     Inventory inv = Inventory.builder()
@@ -47,7 +47,7 @@ public class ProductService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
     }
 
-    // Soft delete
+
     public void delete(Long id) {
 
         Product product = productRepo.findById(id)

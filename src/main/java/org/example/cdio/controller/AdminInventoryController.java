@@ -17,7 +17,7 @@
         public String list(Model model) {
 
             model.addAttribute("inventories",
-                    inventoryService.inventoryView());   // dùng view DTO
+                    inventoryService.inventoryView());
 
             model.addAttribute("products",
                     productRepo.findAll());

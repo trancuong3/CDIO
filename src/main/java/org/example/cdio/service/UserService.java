@@ -86,4 +86,16 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User không tồn tại"));
         user.setStatus(User.Status.ACTIVE);
     }
+    public void deleteUser(Long id) {
+
+        User user = userRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+      
+        if (user.getRole().getId() == 2L) {
+            throw new RuntimeException("Không được xóa ADMIN");
+        }
+
+        userRepo.delete(user);
+    }
 }

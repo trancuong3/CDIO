@@ -24,7 +24,7 @@ public class InventoryService {
     private final InventoryRepository inventoryRepo;
     private final ProductRepository productRepo;
 
-    // ================= NHẬP KHO =================
+
     public void stockIn(Long productId, Integer qty) {
 
         if (qty == null || qty <= 0) return;
@@ -44,7 +44,7 @@ public class InventoryService {
         inventoryRepo.save(inv);
     }
 
-    // ================= XUẤT KHO =================
+
     public void stockOut(Long productId, Integer qty) {
 
         Inventory inv = inventoryRepo.findByProductId(productId)
@@ -62,7 +62,7 @@ public class InventoryService {
 
         return inventoryRepo.findAll()
                 .stream()
-                // CHỈ LẤY PRODUCT ACTIVE
+
                 .filter(inv ->
                         inv.getProduct() != null &&
                                 Boolean.TRUE.equals(inv.getProduct().getIsActive())
@@ -97,7 +97,7 @@ public class InventoryService {
                             expiryDays,
                             expiredAt,
                             daysLeft,
-                            p.getImg()   // 👈 THÊM DÒNG NÀY
+                            p.getImg()
                     );
                 })
                 .collect(Collectors.toList());

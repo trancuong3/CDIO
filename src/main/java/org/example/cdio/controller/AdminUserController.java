@@ -61,7 +61,7 @@ public class AdminUserController {
         var user = userRepo.findById(id)
                 .orElseThrow();
 
-        // Nếu là ADMIN thì không cho sửa
+
         if (user.getRole().getId() == 2L) {
             return "redirect:/admin/users";
         }
@@ -95,6 +95,13 @@ public class AdminUserController {
     @GetMapping("/unlock/{id}")
     public String unlock(@PathVariable Long id) {
         userService.unlock(id);
+        return "redirect:/admin/users";
+    }
+    @GetMapping("/delete/{id}")
+    public String delete(@PathVariable Long id) {
+
+        userService.deleteUser(id);
+
         return "redirect:/admin/users";
     }
 }
