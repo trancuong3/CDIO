@@ -33,8 +33,8 @@ public class User {
     @Column(name = "full_name")
     private String fullName;
 
-    // thêm email
-    @Column(nullable = false, unique = true, length = 100)
+    // DB hien tai cho phep null va do dai den 255 ky tu.
+    @Column(length = 255)
     private String email;
 
     @Enumerated(EnumType.STRING)

@@ -33,6 +33,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         .requestMatchers(
+                            "/",
+                            "/error",
                                 "/login",
                                 "/store/register",
                                 "/payment/**",
@@ -43,9 +45,6 @@ public class SecurityConfig {
                                 "/images/**"
                         ).permitAll()
 
-                        // cho phép redirect sau thanh toán
-                        .requestMatchers("/store/dashboard").permitAll()
-
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/store/**").hasRole("STORE")
                         .requestMatchers("/shipper/**").hasRole("SHIPPER")
@@ -54,11 +53,9 @@ public class SecurityConfig {
                 )
 
                 .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/login")
-                        .successHandler(successHandler())
-                        .failureUrl("/login?error")
-                        .permitAll()
+                    .loginPage("/login")
+                    .successHandler(successHandler())
+                    .permitAll()
                 )
 
                 .logout(logout -> logout

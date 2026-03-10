@@ -17,11 +17,13 @@ public class Store {
     @Column(nullable = false)
     private String name;
 
+    @Column(length = 500)
     private String address;
 
     @Column(name = "representative_name")
     private String representativeName;
 
+    @Column(length = 30)
     private String phone;
 
     @Enumerated(EnumType.STRING)
