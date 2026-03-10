@@ -54,6 +54,15 @@
             display:none;
         }
 
+        .pagination .page-link{
+            color:#ff5722;
+        }
+
+        .pagination .active .page-link{
+            background:#ff5722;
+            border:none;
+        }
+
     </style>
 </head>
 
@@ -185,6 +194,52 @@
     </div>
 
 
+    <!-- PAGINATION -->
+    <div class="d-flex justify-content-center mt-4">
+
+        <nav>
+            <ul class="pagination">
+
+                <!-- Previous -->
+                <li class="page-item"
+                    th:classappend="${productPage.first} ? 'disabled'">
+
+                    <a class="page-link"
+                       th:href="@{/store/dashboard(page=${productPage.number - 1})}">
+                        ←
+                    </a>
+
+                </li>
+
+                <!-- Page numbers -->
+                <li class="page-item"
+                    th:each="i : ${#numbers.sequence(0, productPage.totalPages - 1)}"
+                    th:classappend="${i == productPage.number} ? 'active'">
+
+                    <a class="page-link"
+                       th:href="@{/store/dashboard(page=${i})}"
+                       th:text="${i + 1}">
+                    </a>
+
+                </li>
+
+                <!-- Next -->
+                <li class="page-item"
+                    th:classappend="${productPage.last} ? 'disabled'">
+
+                    <a class="page-link"
+                       th:href="@{/store/dashboard(page=${productPage.number + 1})}">
+                        →
+                    </a>
+
+                </li>
+
+            </ul>
+        </nav>
+
+    </div>
+
+
     <div id="noResult" class="text-center mt-5">
         <h5 class="text-danger">❌ Không tìm thấy sản phẩm</h5>
     </div>
@@ -200,9 +255,7 @@
 
     $(document).ready(function(){
 
-        /* =============================
-        SEARCH PRODUCT
-        ============================= */
+        /* SEARCH */
 
         $("#searchInput").on("keyup",function(){
 
@@ -231,9 +284,7 @@
         });
 
 
-        /* =============================
-        FILTER WEIGHT
-        ============================= */
+        /* FILTER WEIGHT */
 
         $("#filterWeight").change(function(){
 
@@ -254,9 +305,7 @@
         });
 
 
-        /* =============================
-        SORT PRICE
-        ============================= */
+        /* SORT PRICE */
 
         $("#sortPrice").change(function(){
 
@@ -290,9 +339,7 @@
         });
 
 
-        /* =============================
-        ADD CART
-        ============================= */
+        /* ADD CART */
 
         $(".btn-add-cart").click(function(){
 
